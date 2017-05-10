@@ -5,14 +5,8 @@ The port number is passed as an argument
  To compile: gcc server.c -o server
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include "server.h"
 
-void * work_function(void * params);
 
 int main(int argc, char *argv[]) {
 	/* Ensure the port number was provided. */
