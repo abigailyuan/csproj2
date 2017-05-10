@@ -16,6 +16,7 @@ int main(int argc, char **argv){
 
   pthread_t tid;
   char *msg1 = "1";
+  //create a socket here and listen, handle with new thread
   pthread_create(&tid, NULL, create_socket, (void *) msg1);
   pthread_join(tid, NULL);
 
@@ -29,23 +30,25 @@ int main(int argc, char **argv){
 }
 
 void *create_socket(void *param){
-  printf("%s\n", (char*)param);
 
+  //create socket here and listen
   num_pthread++;
+  int threadinx = num_pthread;
+  printf("%d\n", num_pthread);
 
   pthread_t tid;
   printf("continue?\n");
-  char flag[1];
-  scanf("%s\n", flag);
-
-  if(*flag == 'y'){
+  char flag;
+  scanf("%c\n", &flag);
+  if(flag == 'y'){
 
     char *msg2 = "2";
     printf("create new thread\n");
 
     pthread_create(&tid, NULL, create_socket, (void *) msg2);
     pthread_join(tid, NULL);
-    return 0;
+    printf("%d returned\n", threadinx+1);
+    //return 0;
   }else{
     return 0;
   }
