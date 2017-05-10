@@ -30,6 +30,7 @@ typedef struct {
 	int client_fd;
 	struct sockaddr_in client_addr;
 	struct sockaddr_in server_addr;
+	int newsocket_fd;
 } client_info_t;
 /*---------------------------------------------------------------------*/
 

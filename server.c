@@ -9,6 +9,9 @@ The port number is passed as an argument
 
 
 int main(int argc, char *argv[]) {
+
+	int socket_fd, portno, clilen;
+	char buffer[256];
 	/* Ensure the port number was provided. */
 	if(argc < N_ARGS) {
 		fprintf(stderr, "Usage %s port_number.\n", argv[0]);
@@ -30,9 +33,42 @@ int main(int argc, char *argv[]) {
 	fclose(fp);
 
 	/* Get a socket to listen on */
-	int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
+	//int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
+	/* Create TCP socket */
+
+ 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+ 	if (socket_fd < 0)
+ 	{
+		//printf("ERROR opening socket\n");
+ 		perror("ERROR opening socket");
+ 		exit(1);
+ 	}
+
+ 	bzero((char *) &server_addr, sizeof(server_addr));
+
+ 	portno = atoi(argv[1]);
+
+ 	/* Create address we're going to listen on (given port number)
+ 	 - converted to network byte order & any IP address for
+ 	 this machine */
+
+ 	server_addr.sin_family = AF_INET;
+ 	server_addr.sin_addr.s_addr = INADDR_ANY;
+ 	server_addr.sin_port = htons(portno);  // store in machine-neutral format
+
+ 	 /* Bind address to the socket */
+
+ 	if (bind(socket_fd, (struct sockaddr *) &server_addr,
+ 			sizeof(server_addr)) < 0)
+ 	{
+		//printf("ERROR on binding\n");
+ 		perror("ERROR on binding");
+ 		exit(1);
+ 	}
+
 	int client_fd = 0;
-  	socklen_t client_len;
+  socklen_t client_len;
 
 	/* Listen on this socket */
 	if(listen(socket_fd, MAX_CLIENTS) < 0) {
@@ -40,14 +76,18 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	printf("Listening on port %d....\n", atoi(argv[1]));
-
+	printf("aaaaa\n");
 	/* Accept requests from clients */
 	while(TRUE) {
 		/* Get a new fd to communicate on */
+		//printf("socket_fd is %d\n", socket_fd);
+
 		client_fd = accept(socket_fd, (struct sockaddr *)&client_addr,
 			            &client_len);
+		printf("client_fd is %d\n", client_fd);
 		if(client_fd < 0) {
-			perror("Error accepting client.\n");
+			printf("Error accepting client.\n");
+			//perror("Error accepting client.\n");
 			exit(EXIT_FAILURE);
 		}
 		/* The server will communicate to the client on a new thread */
@@ -61,7 +101,7 @@ int main(int argc, char *argv[]) {
 		info->client_addr = client_addr;
 		info->server_addr = server_addr;
 		/* Log this connection. */
-		connection_log(*info);
+		//connection_log(*info);
 
 		/* Create this new thread*/
 		pthread_t thread_id;
@@ -81,12 +121,14 @@ int main(int argc, char *argv[]) {
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
 
+	char buffer[256];
+	int n;
 	bzero(buffer,256);
 
 	/* Read characters from the connection,
 		then process */
 
-	n = read(newsockfd,buffer,255);
+	n = read(client_info->newsocket_fd,buffer,255);
 
 	if (n < 0)
 	{
@@ -96,7 +138,7 @@ void * work_function(void * params){
 
 	printf("Here is the message: %s\n",buffer);
 
-	n = write(newsockfd,"I got your message",18);
+	n = write(client_info->newsocket_fd,"I got your message",18);
 
 	if (n < 0)
 	{
