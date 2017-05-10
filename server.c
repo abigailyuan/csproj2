@@ -1,108 +1,113 @@
 /* A simple server in the internet domain using TCP
-The port number is passed as an argument 
+The port number is passed as an argument
 
 
- To compile: gcc server.c -o server 
+ To compile: gcc server.c -o server
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+void * work_function(void * params);
 
-int main(int argc, char **argv)
-{
-	int sockfd, newsockfd, portno, clilen;
-	char buffer[256];
-	struct sockaddr_in serv_addr, cli_addr;
-	int n;
-
-	if (argc < 2) 
-	{
-		fprintf(stderr,"ERROR, no port provided\n");
-		exit(1);
+int main(int argc, char *argv[]) {
+	/* Ensure the port number was provided. */
+	if(argc < N_ARGS) {
+		fprintf(stderr, "Usage %s port_number.\n", argv[0]);
+		exit(EXIT_FAILURE);
 	}
+	/* Initialize mutex lock */
+	if (pthread_mutex_init(&lock, NULL) != 0) {
+        fprintf(stderr, "Mutex init failed.\n");
+        exit(EXIT_FAILURE);
+    }
+	/* Client & server address */
+	struct sockaddr_in client_addr, server_addr;
 
-	 /* Create TCP socket */
-	
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if (sockfd < 0) 
-	{
-		perror("ERROR opening socket");
-		exit(1);
+	/* Create a new log file each time server restarts */
+	if((fp=fopen(OUT_FILE, "w")) == NULL) {
+		printf("Failed to create log file.\n");
+		exit(EXIT_FAILURE);
 	}
+	fclose(fp);
 
-	
-	bzero((char *) &serv_addr, sizeof(serv_addr));
+	/* Get a socket to listen on */
+	int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
+	int client_fd = 0;
+  	socklen_t client_len;
 
-	portno = atoi(argv[1]);
-	
-	/* Create address we're going to listen on (given port number)
-	 - converted to network byte order & any IP address for 
-	 this machine */
-	
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(portno);  // store in machine-neutral format
-
-	 /* Bind address to the socket */
-	
-	if (bind(sockfd, (struct sockaddr *) &serv_addr,
-			sizeof(serv_addr)) < 0) 
-	{
-		perror("ERROR on binding");
-		exit(1);
+	/* Listen on this socket */
+	if(listen(socket_fd, MAX_CLIENTS) < 0) {
+		fprintf(stderr, "Failed to listen.\n");
+		exit(EXIT_FAILURE);
 	}
-	
-	/* Listen on socket - means we're ready to accept connections - 
-	 incoming connection requests will be queued */
-	
-	listen(sockfd,5);
-	
-	clilen = sizeof(cli_addr);
+	printf("Listening on port %d....\n", atoi(argv[1]));
 
-	/* Accept a connection - block until a connection is ready to
-	 be accepted. Get back a new file descriptor to communicate on. */
+	/* Accept requests from clients */
+	while(TRUE) {
+		/* Get a new fd to communicate on */
+		client_fd = accept(socket_fd, (struct sockaddr *)&client_addr,
+			            &client_len);
+		if(client_fd < 0) {
+			perror("Error accepting client.\n");
+			exit(EXIT_FAILURE);
+		}
+		/* The server will communicate to the client on a new thread */
+		/* Create a structure to pass in client information to the new
+		 * thread.
+		 */
+		client_info_t *info;
+		info = (client_info_t *)malloc(sizeof(*info));
+		assert(info != NULL);
+		info->client_fd = client_fd;
+		info->client_addr = client_addr;
+		info->server_addr = server_addr;
+		/* Log this connection. */
+		connection_log(*info);
 
-	newsockfd = accept(	sockfd, (struct sockaddr *) &cli_addr, 
-						&clilen);
-
-	if (newsockfd < 0) 
-	{
-		perror("ERROR on accept");
-		exit(1);
+		/* Create this new thread*/
+		pthread_t thread_id;
+		if(pthread_create(&thread_id, NULL, work_function, (void*)info)) {
+			fprintf(stderr, "Failed to create thread.\n");
+			exit(EXIT_FAILURE);
+		}
+		/* Detach this thread */
+		if(pthread_detach(thread_id)) {
+			fprintf(stderr, "Failed to detach thead.\n");
+			exit(EXIT_FAILURE);
+		}
 	}
-	
+	return 0;
+}
+
+void * work_function(void * params){
+	client_info_t *client_info = (client_info_t *)params;
+
 	bzero(buffer,256);
 
 	/* Read characters from the connection,
 		then process */
-	
+
 	n = read(newsockfd,buffer,255);
 
-	if (n < 0) 
+	if (n < 0)
 	{
 		perror("ERROR reading from socket");
 		exit(1);
 	}
-	
+
 	printf("Here is the message: %s\n",buffer);
 
 	n = write(newsockfd,"I got your message",18);
-	
-	if (n < 0) 
+
+	if (n < 0)
 	{
 		perror("ERROR writing to socket");
 		exit(1);
 	}
-	
-	/* close socket */
-	
-	close(sockfd);
-	
-	return 0; 
+
 }
