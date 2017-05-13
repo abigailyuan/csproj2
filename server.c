@@ -75,8 +75,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Failed to listen.\n");
 		exit(EXIT_FAILURE);
 	}
-	printf("Listening on port %d....\n", atoi(argv[1]));
-	printf("aaaaa\n");
+	//printf("Listening on port %d....\n", atoi(argv[1]));
+
 	/* Accept requests from clients */
 	while(TRUE) {
 		/* Get a new fd to communicate on */
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
 		client_fd	 = accept(socket_fd, (struct sockaddr *)&client_addr,
 			            &client_len);
-		printf("client_fd is %d\n", client_fd);
+		//printf("client_fd is %d\n", client_fd);
 		if(client_fd < 0) {
 			printf("Error accepting client.\n");
 			//perror("Error accepting client.\n");
@@ -128,7 +128,7 @@ void * work_function(void * params){
 
 	/* Read characters from the connection,
 		then process */
-	printf("%d\n", client_info->client_fd);
+	//printf("%d\n", client_info->client_fd);
 	n = read(client_info->client_fd,buffer,255);
 
 	if (n < 0)
@@ -140,13 +140,19 @@ void * work_function(void * params){
 	printf("%s\n",buffer);
 
 	//TODO check message and reply
+	char firstFour[5];
+	strncpy(&firstFour, buffer, 4);
+
 	if(strcmp(buffer, "PING\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "PONG");
 	}else if(strcmp(buffer, "OKAY\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "It's not okay to send 'OKAY' messages to the server.");
-	}else if(strcmp()
+	}else if(strcmp(firstFour, "ERRO")==0){
+		bzero(buffer, 256);
+		strcpy(buffer, "This message should not be sent to the server.");
+	}
 	n = write(client_info->client_fd,buffer,255);
 
 	if (n < 0)
