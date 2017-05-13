@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
 		/* Get a new fd to communicate on */
 		//printf("socket_fd is %d\n", socket_fd);
 
-		client_fd = accept(socket_fd, (struct sockaddr *)&client_addr,
+		client_fd	 = accept(socket_fd, (struct sockaddr *)&client_addr,
 			            &client_len);
 		printf("client_fd is %d\n", client_fd);
 		if(client_fd < 0) {
@@ -100,6 +100,7 @@ int main(int argc, char *argv[]) {
 		info->client_fd = client_fd;
 		info->client_addr = client_addr;
 		info->server_addr = server_addr;
+		info->newsocket_fd = socket_fd;
 		/* Log this connection. */
 		//connection_log(*info);
 
@@ -127,8 +128,8 @@ void * work_function(void * params){
 
 	/* Read characters from the connection,
 		then process */
-
-	n = read(client_info->newsocket_fd,buffer,255);
+	printf("%d\n", client_info->client_fd);
+	n = read(client_info->client_fd,buffer,255);
 
 	if (n < 0)
 	{
@@ -136,9 +137,17 @@ void * work_function(void * params){
 		exit(1);
 	}
 
-	printf("Here is the message: %s\n",buffer);
+	printf("%s\n",buffer);
 
-	n = write(client_info->newsocket_fd,"I got your message",18);
+	//TODO check message and reply
+	if(strcmp(buffer, "PING\n")==0){
+		bzero(buffer, 256);
+		strcpy(buffer, "PONG");
+	}else if(strcmp(buffer, "OKAY\n")==0){
+		bzero(buffer, 256);
+		strcpy(buffer, "It's not okay to send 'OKAY' messages to the server.");
+	}else if(strcmp()
+	n = write(client_info->client_fd,buffer,255);
 
 	if (n < 0)
 	{
