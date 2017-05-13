@@ -54,7 +54,7 @@ typedef struct {
  * Output: None, plays game with the client and logs the activity.
  */
 void * work_function(void * params);
-
+int isvalid(char* buffer, int bufferlen);
 
 /* Writes out a connection log to the file.
  * Input: Client info struct.

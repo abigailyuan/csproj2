@@ -131,8 +131,7 @@ void * work_function(void * params){
 	//printf("%d\n", client_info->client_fd);
 	n = read(client_info->client_fd,buffer,255);
 
-	if (n < 0)
-	{
+	if (n < 0) {
 		perror("ERROR reading from socket");
 		exit(1);
 	}
@@ -142,6 +141,7 @@ void * work_function(void * params){
 	//TODO check message and reply
 	char firstFour[5];
 	strncpy(&firstFour, buffer, 4);
+	printf("%s\n", firstFour);
 
 	if(strcmp(buffer, "PING\n")==0){
 		bzero(buffer, 256);
@@ -152,13 +152,45 @@ void * work_function(void * params){
 	}else if(strcmp(firstFour, "ERRO")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "This message should not be sent to the server.");
+	}else if(strcmp(firstFour, "SOLN")==0){
+		//TODO check isvalid(buffer) return 0 if valid
+
+		isvalid(buffer, 255);
 	}
 	n = write(client_info->client_fd,buffer,255);
 
-	if (n < 0)
-	{
+	if (n < 0) {
 		perror("ERROR writing to socket");
 		exit(1);
 	}
+}
+int isvalid(char* buffer, int bufferlen){
+	char difficulty[9];
+	char seed[65];
+	char solution[17];
 
+	int difficultyINT;
+	long long seedINT;
+	long int solutionINT;
+	char * ptr1, *ptr2, *ptr3;
+
+	memcpy(&difficulty, buffer+5, 8);
+	//printf("difficulty is %s\n", difficulty);
+	memcpy(&seed, buffer+14, 64);
+	//printf("seed is %s\n", seed);
+	memcpy(&solution, buffer+79, 16);
+	//printf("solution is %s\n", solution);
+
+	difficultyINT = strtol(difficulty, &ptr1, 16);
+	printf("difficulty is %x\n", difficultyINT);
+
+	seedINT = strtol(seed, &ptr2, 16);
+	printf("seed is %llx\n", seedINT);
+
+	solutionINT = strtol(solution, &ptr3, 16);
+	printf("solution is %lx\n", solutionINT);
+
+	//TODO calculate target by bit shifting difficultyINT, get a and b
+
+	return 0;
 }
