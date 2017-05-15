@@ -201,11 +201,31 @@ int isvalid(char* buffer, int bufferlen){
 
 
 	//get target
-	long long target;
-	unsigned int a, b;
-	a = difficultyBYTE[0];
-	b = difficultyBYTE[1]*16*16 + difficultyBYTE[2]*16 + difficultyBYTE[3];
-	target = caltarget(a, b);
+	// long long target;
+	// unsigned int a, b;
+	// a = difficultyBYTE[0];
+	// b = difficultyBYTE[1]*16*16 + difficultyBYTE[2]*16 + difficultyBYTE[3];
+	// target = caltarget(a, b);
+
+	BYTE a[32];
+	BYTE b[32];
+	BYTE constant[32];
+	BYTE exp[32];
+	BYTE target[32];
+	uint256_init(a);
+	uint256_init(b);
+	uint256_init(constant);
+	uint256_init(exp);
+	uint256_init(target);
+	//TODO a-3 && 8*(a-3)
+	a[31] = difficultyBYTE[0];
+	printf("%02x\n", a[31]);
+	int i = 0;
+	for(i=0;i<3;i++){
+		b[i+28] = difficultyBYTE[i+1];
+		printf("%02x\n", b[i+28]);
+	}
+
 
 	return 0;
 }
