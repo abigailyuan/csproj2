@@ -169,6 +169,10 @@ int isvalid(char* buffer, int bufferlen){
 	char seed[65];
 	char solution[17];
 
+	BYTE difficultyBYTE[DIFFICULTY_LEN];
+	BYTE seedBYTE[SEED_LEN];
+	BYTE solutionBYTE[SOLUTION_LEN];
+
 	int difficultyINT;
 	long long seedINT;
 	long int solutionINT;
@@ -190,7 +194,59 @@ int isvalid(char* buffer, int bufferlen){
 	solutionINT = strtol(solution, &ptr3, 16);
 	printf("solution is %lx\n", solutionINT);
 
-	//TODO calculate target by bit shifting difficultyINT, get a and b
+	ctob(difficulty, 8, difficultyBYTE);
+	ctob(seed, 64, seedBYTE);
+	ctob(solution, 16, solutionBYTE);
+
+
+
+	//get target
+	long long target;
+	unsigned int a, b;
+	a = difficultyBYTE[0];
+	b = difficultyBYTE[1]*16*16 + difficultyBYTE[2]*16 + difficultyBYTE[3];
+	target = caltarget(a, b);
 
 	return 0;
+}
+
+void ctob(char* string, int stringlen, BYTE *number){
+	int i = 0;
+	int j = 0;
+	for(i=0;i<stringlen;i+=2){
+		BYTE buffer[2];
+		buffer[0] = getval(string[i]);
+		buffer[1] = getval(string[i+1]);
+		number[j] = buffer[0] * 16 + buffer[1];
+		j++;
+	}
+}
+
+long long caltarget(unsigned int a, unsigned int b){
+	long long target;
+	unsigned int exp = 8 * (a - 3);
+	long long power = (((long long)1) << exp);
+	target = 8 * power;
+	return target;
+}
+
+int getval(BYTE character){
+	switch (character) {
+		case '0': return 0;
+		case '1': return 1;
+		case '2': return 2;
+		case '3': return 3;
+		case '4': return 4;
+		case '5': return 5;
+		case '6': return 6;
+		case '7': return 7;
+		case '8': return 8;
+		case '9': return 9;
+		case 'a': return 10;
+		case 'b': return 11;
+		case 'c': return 12;
+		case 'd': return 13;
+		case 'e': return 14;
+		case 'f': return 15;
+	}
 }

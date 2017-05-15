@@ -16,9 +16,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include <pthread.h>
 #include <time.h>
 #include <arpa/inet.h>
+#include "crypto/sha256.h"
+#include "uint256.h"
 /*---------------------------------------------------------------------*/
 
 
@@ -38,13 +41,9 @@ typedef struct {
 #define N_ARGS 2
 #define TRUE 1
 #define OUT_FILE "log.txt"
-#define STATUS_ABNORMAL   1
-#define STATUS_USER_WON   5
-#define STATUS_DRAW       6
-#define STATUS_AI_WON     7
-#define TIME_BUFFER 100
-#define SERVER_MOVE 1
-#define CLIENT_MOVE 2
+#define DIFFICULTY_LEN 4
+#define SEED_LEN 32
+#define SOLUTION_LEN 8
 #define MAX_CLIENTS 1000
 /*---------------------------------------------------------------------*/
 
@@ -55,6 +54,10 @@ typedef struct {
  */
 void * work_function(void * params);
 int isvalid(char* buffer, int bufferlen);
+void ctob(char* string, int stringlen, BYTE *number);
+int getval(BYTE character);
+long long caltarget(unsigned int a, unsigned int b);
+
 
 /* Writes out a connection log to the file.
  * Input: Client info struct.
