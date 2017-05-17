@@ -145,17 +145,53 @@ void * work_function(void * params){
 
 	if(strcmp(buffer, "PING\n")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "PONG");
+		strcpy(buffer, "PONG\n");
 	}else if(strcmp(buffer, "OKAY\n")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "It's not okay to send 'OKAY' messages to the server.");
+		strcpy(buffer, "It's not okay to send 'OKAY' messages to the server.\n");
 	}else if(strcmp(firstFour, "ERRO")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "This message should not be sent to the server.");
+		strcpy(buffer, "This message should not be sent to the server.\n");
 	}else if(strcmp(firstFour, "SOLN")==0){
-		//TODO check isvalid(buffer) return 0 if valid
+		char difficulty[9];
+		char seed[65];
+		char solution[17];
 
-		isvalid(buffer, 255);
+		BYTE difficultyBYTE[DIFFICULTY_LEN];
+		BYTE seedBYTE[SEED_LEN];
+		BYTE solutionBYTE[8];
+		memcpy(&difficulty, buffer+5, 8);
+		memcpy(&seed, buffer+14, 64);
+		memcpy(&solution, buffer+79, 16);
+
+		ctob(difficulty, 8, difficultyBYTE);
+		ctob(seed, 64, seedBYTE);
+		ctob(solution, 16, solutionBYTE);
+		int valid = isvalid(difficultyBYTE, seedBYTE, solutionBYTE);
+		bzero(buffer, 256);
+		if(valid){
+			strcpy(buffer, "OKAY\n");
+		}else{
+			strcpy(buffer, "ERRO not a valid solution.\n");
+		}
+
+	}else if(strcmp(firstFour, "WORK")==0){
+		char difficulty[9];
+		char seed[65];
+		char start[17];
+
+		BYTE difficultyBYTE[DIFFICULTY_LEN];
+		BYTE seedBYTE[SEED_LEN];
+		BYTE startBYTE[8];
+		memcpy(&difficulty, buffer+5, 8);
+		memcpy(&seed, buffer+14, 64);
+		memcpy(&start, buffer+79, 16);
+
+		ctob(difficulty, 8, difficultyBYTE);
+		ctob(seed, 64, seedBYTE);
+		ctob(start, 16, startBYTE);
+		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
+
 	}
 	n = write(client_info->client_fd,buffer,255);
 
@@ -164,49 +200,11 @@ void * work_function(void * params){
 		exit(1);
 	}
 }
-int isvalid(char* buffer, int bufferlen){
-	char difficulty[9];
-	char seed[65];
-	char solution[17];
+int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 
-	BYTE difficultyBYTE[DIFFICULTY_LEN];
-	BYTE seedBYTE[SEED_LEN];
-	BYTE solutionBYTE[SOLUTION_LEN];
+	 BYTE x[40];
 
-	int difficultyINT;
-	long long seedINT;
-	long int solutionINT;
-	char * ptr1, *ptr2, *ptr3;
-
-	memcpy(&difficulty, buffer+5, 8);
-	//printf("difficulty is %s\n", difficulty);
-	memcpy(&seed, buffer+14, 64);
-	//printf("seed is %s\n", seed);
-	memcpy(&solution, buffer+79, 16);
-	//printf("solution is %s\n", solution);
-
-	difficultyINT = strtol(difficulty, &ptr1, 16);
-	printf("difficulty is %x\n", difficultyINT);
-
-	seedINT = strtol(seed, &ptr2, 16);
-	printf("seed is %llx\n", seedINT);
-
-	solutionINT = strtol(solution, &ptr3, 16);
-	printf("solution is %lx\n", solutionINT);
-
-	ctob(difficulty, 8, difficultyBYTE);
-	ctob(seed, 64, seedBYTE);
-	ctob(solution, 16, solutionBYTE);
-
-
-
-	//get target
-	// long long target;
-	// unsigned int a, b;
-	// a = difficultyBYTE[0];
-	// b = difficultyBYTE[1]*16*16 + difficultyBYTE[2]*16 + difficultyBYTE[3];
-	// target = caltarget(a, b);
-
+//get target
 	unsigned int a;
 	BYTE b[32];
 	BYTE expResult[32];
@@ -214,17 +212,13 @@ int isvalid(char* buffer, int bufferlen){
 	BYTE target[32];
 	BYTE two[32];
 
-
 	uint256_init(b);
 	uint256_init(exp);
 	uint256_init(target);
 	uint256_init(expResult);
 	uint256_init(two);
 
-
-
 	two[31] = 0x02;
-
 	a = difficultyBYTE[0] - 3;
 	a = a*8;
 
@@ -234,12 +228,58 @@ int isvalid(char* buffer, int bufferlen){
 	}
 
 	uint256_exp(expResult, two, a);
-	print_uint256(expResult);
 
 	uint256_mul(target, b, expResult);
-	print_uint256(target);
 
-	return 0;
+//get x
+	for(i=0;i<32;i++){
+		x[i] = seedBYTE[i];
+	}
+	for(i=0;i<8;i++){
+		x[i+32] = solutionBYTE[i];
+	}
+
+
+//hash 1
+	SHA256_CTX ctx1;
+	BYTE buf[SHA256_BLOCK_SIZE];
+	sha256_init(&ctx1);
+	sha256_update(&ctx1, x, 40);
+	sha256_final(&ctx1, buf);
+
+//hash 2
+	SHA256_CTX ctx2;
+	BYTE buf2[SHA256_BLOCK_SIZE];
+	sha256_init(&ctx2);
+	sha256_update(&ctx2, buf, 32);
+	sha256_final(&ctx2, buf2);
+
+
+//check h(h(x)) < target
+	// print_uint256(target);
+	// print_uint256(buf2);
+	// print_uint256(buf);
+	return compareBYTE(buf2, target);
+}
+
+char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE){
+	int valid = 0;
+
+	BYTE one[32];
+	uint256_init(one);
+	one[31] = 0x01;
+	valid = isvalid(difficultyBYTE, seedBYTE, startBYTE);
+
+	while(valid == 0){
+		uint256_add(startBYTE, startBYTE, one);
+		valid = isvalid(difficultyBYTE, seedBYTE, startBYTE);
+	}
+	bzero(buffer, 4);
+	strcpy(buffer, "SOLN");
+	char solution[17];
+	btoc(startBYTE, 32, solution);
+	bzero(buffer+79, 20);
+	strcpy(buffer+79, solution);
 }
 
 void ctob(char* string, int stringlen, BYTE *number){
@@ -254,13 +294,39 @@ void ctob(char* string, int stringlen, BYTE *number){
 	}
 }
 
-long long caltarget(unsigned int a, unsigned int b){
-	long long target;
-	unsigned int exp = 8 * (a - 3);
-	long long power = (((long long)1) << exp);
-	target = 8 * power;
-	return target;
+void btoc(BYTE *number, int numberlen, char *string){
+	char character[2];
+	int a,b;
+	int i = 0;
+	int j = 0;
+	for(i=0;i<numberlen;i++){
+		a = number[i] / 16;
+		b = number[i] % 16;
+		character[0] = getcharacter(a);
+		character[1] = getcharacter(b);
+		string[j] = character[0];
+		string[j+1] = character[1];
+		j+=2;
+	}
+
 }
+
+int compareBYTE(BYTE *y, BYTE *target){
+	int i=0;
+	for(i=0;i<32;i++){
+		printf("y[%d] = %02x\n", i, y[i]);
+		printf("target[%d] = %02x\n", i, target[i]);
+		if(y[i] == target[i]){
+			continue;
+		}else if(y[i] > target[i]){
+			return 0;
+		}else{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 
 int getval(BYTE character){
 	switch (character) {
@@ -280,5 +346,25 @@ int getval(BYTE character){
 		case 'd': return 13;
 		case 'e': return 14;
 		case 'f': return 15;
+	}
+}
+char getcharacter(int number){
+	switch (number) {
+		case 0: return '0';
+		case 1: return '1';
+		case 2: return '2';
+		case 3: return '3';
+		case 4: return '4';
+		case 5: return '5';
+		case 6: return '6';
+		case 7: return '7';
+		case 8: return '8';
+		case 9: return '9';
+		case 10: return 'a';
+		case 11: return 'b';
+		case 12: return 'c';
+		case 13: return 'd';
+		case 14: return 'e';
+		case 15: return 'f';
 	}
 }

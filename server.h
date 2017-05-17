@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <arpa/inet.h>
-#include "crypto/sha256.h"
+#include "crypto/sha256.c"
 #include "uint256.h"
 /*---------------------------------------------------------------------*/
 
@@ -53,10 +53,13 @@ typedef struct {
  * Output: None, plays game with the client and logs the activity.
  */
 void * work_function(void * params);
-int isvalid(char* buffer, int bufferlen);
+int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE* solutionBYTE);
 void ctob(char* string, int stringlen, BYTE *number);
+char getcharacter(int number);
 int getval(BYTE character);
-long long caltarget(unsigned int a, unsigned int b);
+int compareBYTE(BYTE *y, BYTE *target);
+char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE);
+void btoc(BYTE *number, int numberlen, char *string);
 
 
 /* Writes out a connection log to the file.
