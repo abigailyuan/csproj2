@@ -264,22 +264,29 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE){
 	int valid = 0;
-
+	BYTE nonce[32];
 	BYTE one[32];
 	uint256_init(one);
+	uint256_init(nonce);
+	int i = 7;
+	for(i=7;i>=0;i--){
+		nonce[i+24] = startBYTE[i];
+	}
 	one[31] = 0x01;
-	valid = isvalid(difficultyBYTE, seedBYTE, startBYTE);
-
+	print_uint256(nonce);
+	valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	while(valid == 0){
-		uint256_add(startBYTE, startBYTE, one);
-		valid = isvalid(difficultyBYTE, seedBYTE, startBYTE);
+		uint256_add(nonce, nonce, one);
+		print_uint256(nonce);
+		valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);
-	strcpy(buffer, "SOLN");
+	strncpy(buffer, "SOLN", 4);
 	char solution[17];
 	btoc(startBYTE, 32, solution);
 	bzero(buffer+79, 20);
-	strcpy(buffer+79, solution);
+	strncpy(buffer+79, solution, 16);
+	printf("\n");
 }
 
 void ctob(char* string, int stringlen, BYTE *number){
@@ -314,17 +321,15 @@ void btoc(BYTE *number, int numberlen, char *string){
 int compareBYTE(BYTE *y, BYTE *target){
 	int i=0;
 	for(i=0;i<32;i++){
-		printf("y[%d] = %02x\n", i, y[i]);
-		printf("target[%d] = %02x\n", i, target[i]);
 		if(y[i] == target[i]){
 			continue;
 		}else if(y[i] > target[i]){
 			return 0;
 		}else{
-			return 1;
+			continue;
 		}
 	}
-	return 0;
+	return 1;
 }
 
 

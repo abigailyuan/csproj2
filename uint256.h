@@ -50,9 +50,12 @@ static inline void uint256_add (BYTE *res, BYTE *a, BYTE *b) {
     memcpy (aa, a, 32);
     memcpy (bb, b, 32);
     uint16_t temp = 0;
-    for (size_t i = 0; i < 32; i++) {
+    // Invalid Integer Overflow Bug discovered by Ziren Xiao on 09.05.2017 -
+    // 23:36:40
+    for (int i = 31; i > -1; i--) {
         temp >>= 8;
-        temp += aa[i] + bb[i];
+        temp += aa[i];
+        temp += bb[i];
         res[i] = (BYTE) (temp & 0xff);
     }
 }
