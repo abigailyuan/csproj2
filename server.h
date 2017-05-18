@@ -57,7 +57,6 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE* solutionBYTE);
 void ctob(char* string, int stringlen, BYTE *number);
 char getcharacter(int number);
 int getval(BYTE character);
-int compareBYTE(BYTE *y, BYTE *target);
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE);
 void btoc(BYTE *number, int numberlen, char *string);
 

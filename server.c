@@ -169,7 +169,7 @@ void * work_function(void * params){
 		ctob(solution, 16, solutionBYTE);
 		int valid = isvalid(difficultyBYTE, seedBYTE, solutionBYTE);
 		bzero(buffer, 256);
-		if(valid){
+		if(valid==1){
 			strcpy(buffer, "OKAY\n");
 		}else{
 			strcpy(buffer, "ERRO not a valid solution.\n");
@@ -211,6 +211,8 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 	BYTE exp[32];
 	BYTE target[32];
 	BYTE two[32];
+	print_uint256(seedBYTE);
+	print_uint256(solutionBYTE);
 
 	uint256_init(b);
 	uint256_init(exp);
@@ -238,7 +240,11 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 	for(i=0;i<8;i++){
 		x[i+32] = solutionBYTE[i];
 	}
-
+printf("x\n");
+for(i=0;i<40;i++){
+	printf("%02x", x[i]);
+}
+printf("\n");
 
 //hash 1
 	SHA256_CTX ctx1;
@@ -256,10 +262,10 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 
 
 //check h(h(x)) < target
-	// print_uint256(target);
-	// print_uint256(buf2);
-	// print_uint256(buf);
-	return compareBYTE(buf2, target);
+	//  print_uint256(target);
+	//  print_uint256(buf2);
+
+	return sha256_compare(target, buf2);
 }
 
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE){
@@ -273,17 +279,21 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 		nonce[i+24] = startBYTE[i];
 	}
 	one[31] = 0x01;
+	printf("nonce = \n");
 	print_uint256(nonce);
+	printf("\n");
 	valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	while(valid == 0){
 		uint256_add(nonce, nonce, one);
+		printf("nonce\n");
 		print_uint256(nonce);
+		printf("\n");
 		valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);
 	strncpy(buffer, "SOLN", 4);
 	char solution[17];
-	btoc(startBYTE, 32, solution);
+	btoc(nonce+24, 16, solution);
 	bzero(buffer+79, 20);
 	strncpy(buffer+79, solution, 16);
 	printf("\n");
@@ -318,19 +328,6 @@ void btoc(BYTE *number, int numberlen, char *string){
 
 }
 
-int compareBYTE(BYTE *y, BYTE *target){
-	int i=0;
-	for(i=0;i<32;i++){
-		if(y[i] == target[i]){
-			continue;
-		}else if(y[i] > target[i]){
-			return 0;
-		}else{
-			continue;
-		}
-	}
-	return 1;
-}
 
 
 int getval(BYTE character){
