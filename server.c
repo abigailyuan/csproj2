@@ -157,9 +157,9 @@ void * work_function(void * params){
 		char seed[65];
 		char solution[17];
 
-		BYTE difficultyBYTE[DIFFICULTY_LEN];
-		BYTE seedBYTE[SEED_LEN];
-		BYTE solutionBYTE[8];
+		BYTE difficultyBYTE[32];
+		BYTE seedBYTE[32];
+		BYTE solutionBYTE[32];
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
 		memcpy(&solution, buffer+79, 16);
@@ -167,6 +167,7 @@ void * work_function(void * params){
 		ctob(difficulty, 8, difficultyBYTE);
 		ctob(seed, 64, seedBYTE);
 		ctob(solution, 16, solutionBYTE);
+
 		int valid = isvalid(difficultyBYTE, seedBYTE, solutionBYTE);
 		bzero(buffer, 256);
 		if(valid==1){
@@ -180,9 +181,9 @@ void * work_function(void * params){
 		char seed[65];
 		char start[17];
 
-		BYTE difficultyBYTE[DIFFICULTY_LEN];
-		BYTE seedBYTE[SEED_LEN];
-		BYTE startBYTE[8];
+		BYTE difficultyBYTE[32];
+		BYTE seedBYTE[32];
+		BYTE startBYTE[32];
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
 		memcpy(&start, buffer+79, 16);
@@ -205,14 +206,14 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 	 BYTE x[40];
 
 //get target
-	unsigned int a;
+	uint32_t a;
 	BYTE b[32];
 	BYTE expResult[32];
 	BYTE exp[32];
 	BYTE target[32];
 	BYTE two[32];
-	print_uint256(seedBYTE);
-	print_uint256(solutionBYTE);
+	// print_uint256(seedBYTE);
+	// print_uint256(solutionBYTE);
 
 	uint256_init(b);
 	uint256_init(exp);
@@ -220,31 +221,37 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 	uint256_init(expResult);
 	uint256_init(two);
 
+
 	two[31] = 0x02;
-	a = difficultyBYTE[0] - 3;
+	a = difficultyBYTE[28] - 3;
 	a = a*8;
 
 	int i = 0;
 	for(i=0;i<3;i++){
-		b[i+28] = difficultyBYTE[i+1];
+		b[i+29] = difficultyBYTE[i+29];
 	}
+	// printf("b = \n");
+	// print_uint256(b);
+	// printf("a = %02x\n", a);
 
 	uint256_exp(expResult, two, a);
 
+
 	uint256_mul(target, b, expResult);
+
 
 //get x
 	for(i=0;i<32;i++){
 		x[i] = seedBYTE[i];
 	}
 	for(i=0;i<8;i++){
-		x[i+32] = solutionBYTE[i];
+		x[i+32] = solutionBYTE[i+24];
 	}
-printf("x\n");
-for(i=0;i<40;i++){
-	printf("%02x", x[i]);
-}
-printf("\n");
+	// printf("x = \n");
+	// for(i=0;i<40;i++){
+	// 	printf("%02x", x[i]);
+	// }
+	// printf("\n");
 
 //hash 1
 	SHA256_CTX ctx1;
@@ -262,8 +269,10 @@ printf("\n");
 
 
 //check h(h(x)) < target
-	//  print_uint256(target);
-	//  print_uint256(buf2);
+// printf("targer= \n");
+// 	  print_uint256(target);
+// 		printf("buf 2 = \n");
+// 	  print_uint256(buf2);
 
 	return sha256_compare(target, buf2);
 }
@@ -274,20 +283,17 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 	BYTE one[32];
 	uint256_init(one);
 	uint256_init(nonce);
-	int i = 7;
-	for(i=7;i>=0;i--){
-		nonce[i+24] = startBYTE[i];
+	int i = 0;
+	for(i=0;i<32;i++){
+		nonce[i] = startBYTE[i];
 	}
+
 	one[31] = 0x01;
-	printf("nonce = \n");
-	print_uint256(nonce);
-	printf("\n");
+
 	valid = isvalid(difficultyBYTE, seedBYTE, nonce);
-	while(valid == 0){
+
+	while(valid != 1){
 		uint256_add(nonce, nonce, one);
-		printf("nonce\n");
-		print_uint256(nonce);
-		printf("\n");
 		valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);
@@ -302,11 +308,12 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 void ctob(char* string, int stringlen, BYTE *number){
 	int i = 0;
 	int j = 0;
-	for(i=0;i<stringlen;i+=2){
+	uint256_init(number);
+	for(i=stringlen-2;i>=0;i-=2){
 		BYTE buffer[2];
 		buffer[0] = getval(string[i]);
 		buffer[1] = getval(string[i+1]);
-		number[j] = buffer[0] * 16 + buffer[1];
+		number[31-j] = buffer[0] * 16 + buffer[1];
 		j++;
 	}
 }
