@@ -1,0 +1,213 @@
+============================================
+vis/myuan3.OUT
+20:38:15_Saturday_20_May_2017
+============================================
+=== COMP30023 Project 2 Feedback ===
+
+total 44K
+drwxr-x---. 4 ss ldaemon 4.0K May 20 20:37 .
+drwxr-x---. 4 ss ldaemon   30 May 20 20:37 ..
+drwxr-x---. 2 ss ldaemon    6 May 20 20:37 invis
+-rwx------. 1 ss ldaemon  557 May 20 20:37 Makefile
+-rwx------. 1 ss ldaemon 8.7K May 20 20:37 server.c
+-rwx------. 1 ss ldaemon 2.9K May 20 20:37 server.h
+-rwx------. 1 ss ldaemon 5.6K May 20 20:37 sha256.c
+-rwx------. 1 ss ldaemon 1.3K May 20 20:37 sha256.h
+-rwx------. 1 ss ldaemon 2.9K May 20 20:37 uint256.h
+-rwx------. 1 ss ldaemon 1.8K May 20 20:37 uint256_test.c
+drwx------. 2 ss ldaemon   23 May 20 20:37 vis
+================ START RUN SCRIPT ================
+Current Working Directory: /home/ss/subrun-4000v-cis-nutmeg2-l-8126/comp30023_project2/myuan3
+Submitted Files: total 40
+drwxr-x---. 2 ss ldaemon    6 May 20 20:37 invis
+-rwx------. 1 ss ldaemon  557 May 20 20:37 Makefile
+-rwx------. 1 ss ldaemon 8889 May 20 20:37 server.c
+-rwx------. 1 ss ldaemon 2902 May 20 20:37 server.h
+-rwx------. 1 ss ldaemon 5706 May 20 20:37 sha256.c
+-rwx------. 1 ss ldaemon 1267 May 20 20:37 sha256.h
+-rwx------. 1 ss ldaemon 2894 May 20 20:37 uint256.h
+-rwx------. 1 ss ldaemon 1839 May 20 20:37 uint256_test.c
+drwx------. 2 ss ldaemon   23 May 20 20:37 vis
+gcc -std=gnu99    -c -o server.o server.c
+server.c: In function ‘work_function’:
+server.c:142:2: warning: passing argument 1 of ‘strncpy’ from incompatible pointer type [enabled by default]
+  strncpy(&firstFour, buffer, 4);
+  ^
+In file included from server.h:17:0,
+                 from server.c:8:
+/usr/include/string.h:128:14: note: expected ‘char * restrict’ but argument is of type ‘char (*)[5]’
+ extern char *strncpy (char *__restrict __dest,
+              ^
+gcc -std=gnu99    -c -o sha256.o sha256.c
+gcc -std=gnu99  -o server server.o sha256.o -lm -lpthread
+....EEProcess Process-1:
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+Process Process-2:
+Traceback (most recent call last):
+    self.run()
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 101, in multiconn_basic
+    ret = sock.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+    self.run()
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "../data/test.py", line 29, in wrapper
+Process Process-3:
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 95, in multiconn_basic
+    ret = sock.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+Traceback (most recent call last):
+TimeoutError: Timer expired
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 101, in multiconn_basic
+    ret = sock.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+Process Process-4:
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+Process Process-5:
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 101, in multiconn_basic
+    ret = sock.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+    self.run()
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 95, in multiconn_basic
+    ret = sock.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+E..EE..EE..E........
+======================================================================
+ERROR: test_manyclients (__main__.TestMultiClientSupport)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 160, in test_manyclients
+    ret = socks[target].recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_parallel_clients (__main__.TestMultiClientSupport)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 173, in test_parallel_clients
+    p.join(5)
+  File "/usr/lib64/python2.7/multiprocessing/process.py", line 145, in join
+    res = self._popen.wait(timeout)
+  File "/usr/lib64/python2.7/multiprocessing/forking.py", line 165, in wait
+    time.sleep(delay)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_someclients (__main__.TestMultiClientSupport)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 132, in test_someclients
+    ret = socks[target].recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_multi_work3 (__main__.TestMultiWorkCorrectness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 333, in test_multi_work3
+    ret = s.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_multi_work4 (__main__.TestMultiWorkCorrectness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 342, in test_multi_work4
+    ret = s.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_solo_iwork1 (__main__.TestSingleWorkCorrectness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 293, in test_solo_iwork1
+    ret = s.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_solo_iwork2 (__main__.TestSingleWorkCorrectness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 301, in test_solo_iwork2
+    ret = s.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+======================================================================
+ERROR: test_solo_work3 (__main__.TestSingleWorkCorrectness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "../data/test.py", line 29, in wrapper
+    result = func(*args, **kwargs)
+  File "../data/test.py", line 275, in test_solo_work3
+    ret = s.recv(1024)
+  File "../data/test.py", line 23, in _handle_timeout
+    raise TimeoutError(error_message)
+TimeoutError: Timer expired
+
+----------------------------------------------------------------------
+Ran 26 tests in 62.399s
+
+FAILED (errors=8)
+================ END RUN SCRIPT ================

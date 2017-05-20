@@ -1,22 +1,32 @@
 CC = gcc -std=gnu99
 
-all: server
+## OBJ = Object files.
+## SRC = Source files.
+## EXE = Executable name.
 
-server: server.h server.c 
-	$(CC) -g -o server server.c
+SRC =		server.c sha256.c
+OBJ =		server.o sha256.o
+EXE = 		server
 
-test_crypto: crypto/sha256.h crypto/sha256.c crypto/sha256_test.c
-	$(CC) -g -o sha256_test crypto/sha256.c crypto/sha256_test.c
+## Top level target is executable.
+$(EXE):	$(OBJ)
+		$(CC) $(CFLAGS) -o $(EXE) $(OBJ) -lm -lpthread
 
-test_uint256: uint256.h uint256_test.c
-	$(CC) -g -o uint256_test uint256_test.c
 
-run_test_client: test_crypto test_uint256
-	./sha256_test
-	./uint256_test
-
+## Clean: Remove object files and core dump files.
 clean:
-	rm -rf ./sha256_test ./uint256_test *.o
-	rm ./server
+		/bin/rm $(OBJ)
+
+## Clobber: Performs Clean and removes executable file.
+
+clobber: clean
+		/bin/rm $(EXE)
+
+## Dependencies
+sha256.o: sha256.h
+server.o:	server.h
+
+all: run_test_client clean
+	./uint256_test
 
 .PHONY = run_test_client clean

@@ -138,20 +138,26 @@ void * work_function(void * params){
 
 	printf("%s\n",buffer);
 
-	//TODO check message and reply
 	char firstFour[5];
 	strncpy(&firstFour, buffer, 4);
-	printf("%s\n", firstFour);
+	//printf("%s\n", firstFour);
 
-	if(strcmp(buffer, "PING\n")==0){
+	if(strcmp(buffer, "PING\r\n")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "PONG\n");
-	}else if(strcmp(buffer, "OKAY\n")==0){
+		strcpy(buffer, "PONG\r\n");
+		n = write(client_info->client_fd,buffer,6);
+	}else if(strcmp(buffer, "PONG\r\n")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "It's not okay to send 'OKAY' messages to the server.\n");
+		strcpy(buffer, "ERRO PONG message is strictly reserved for server.\r\n");
+		n = write(client_info->client_fd,buffer,80);
+	}else if(strcmp(buffer, "OKAY\r\n")==0){
+		bzero(buffer, 256);
+		strcpy(buffer, "ERRO It's not okay to send 'OKAY' messages to the server.\r\n");
+		n = write(client_info->client_fd,buffer,80);
 	}else if(strcmp(firstFour, "ERRO")==0){
 		bzero(buffer, 256);
-		strcpy(buffer, "This message should not be sent to the server.\n");
+		strcpy(buffer, "ERRO This message should not be sent to the server.\r\n");
+		n = write(client_info->client_fd,buffer,80);
 	}else if(strcmp(firstFour, "SOLN")==0){
 		char difficulty[9];
 		char seed[65];
@@ -171,10 +177,13 @@ void * work_function(void * params){
 		int valid = isvalid(difficultyBYTE, seedBYTE, solutionBYTE);
 		bzero(buffer, 256);
 		if(valid==1){
-			strcpy(buffer, "OKAY\n");
+			strcpy(buffer, "OKAY\r\n");
+			n = write(client_info->client_fd,buffer,6);
 		}else{
-			strcpy(buffer, "ERRO not a valid solution.\n");
+			strcpy(buffer, "ERRO not a valid solution.\r\n");
+			n = write(client_info->client_fd,buffer,80);
 		}
+
 
 	}else if(strcmp(firstFour, "WORK")==0){
 		char difficulty[9];
@@ -193,8 +202,9 @@ void * work_function(void * params){
 		ctob(start, 16, startBYTE);
 		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
 
+		n = write(client_info->client_fd,buffer,255);
 	}
-	n = write(client_info->client_fd,buffer,255);
+	//n = write(client_info->client_fd,buffer,255);
 
 	if (n < 0) {
 		perror("ERROR writing to socket");

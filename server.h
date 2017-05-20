@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <arpa/inet.h>
-#include "crypto/sha256.c"
+#include "sha256.h"
 #include "uint256.h"
 /*---------------------------------------------------------------------*/
 
