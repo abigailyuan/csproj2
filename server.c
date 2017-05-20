@@ -202,7 +202,7 @@ void * work_function(void * params){
 		ctob(start, 16, startBYTE);
 		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
 
-		n = write(client_info->client_fd,buffer,255);
+		n = write(client_info->client_fd,buffer,strlen(buffer));
 	}
 	//n = write(client_info->client_fd,buffer,255);
 
@@ -304,6 +304,7 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 
 	while(valid != 1){
 		uint256_add(nonce, nonce, one);
+		print_uint256(nonce);
 		valid = isvalid(difficultyBYTE, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);
