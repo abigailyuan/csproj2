@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
 
 	int socket_fd, portno, clilen;
 	char buffer[256];
+
 	/* Ensure the port number was provided. */
 	if(argc < N_ARGS) {
 		fprintf(stderr, "Usage %s port_number.\n", argv[0]);
@@ -26,7 +27,7 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in client_addr, server_addr;
 
 	/* Create a new log file each time server restarts */
-	if((fp=fopen(OUT_FILE, "w")) == NULL) {
+	if((fp=fopen("log.txt", "w")) == NULL) {
 		printf("Failed to create log file.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -173,8 +174,9 @@ void * work_function(void * params){
 		ctob(difficulty, 8, difficultyBYTE);
 		ctob(seed, 64, seedBYTE);
 		ctob(solution, 16, solutionBYTE);
-
-		int valid = isvalid(difficultyBYTE, seedBYTE, solutionBYTE);
+		BYTE target[32];
+		getTarget(target, difficultyBYTE);
+		int valid = isvalid(target, seedBYTE, solutionBYTE);
 		bzero(buffer, 256);
 		if(valid==1){
 			strcpy(buffer, "OKAY\r\n");
@@ -211,57 +213,50 @@ void * work_function(void * params){
 		exit(1);
 	}
 }
-int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
+int isvalid(BYTE* target, BYTE* seedBYTE,BYTE *solutionBYTE){
 
 	 BYTE x[40];
 
-//get target
-	uint32_t a;
-	BYTE b[32];
-	BYTE expResult[32];
-	BYTE exp[32];
-	BYTE target[32];
-	BYTE two[32];
-	// print_uint256(seedBYTE);
-	// print_uint256(solutionBYTE);
-
-	uint256_init(b);
-	uint256_init(exp);
-	uint256_init(target);
-	uint256_init(expResult);
-	uint256_init(two);
-
-
-	two[31] = 0x02;
-	a = difficultyBYTE[28] - 3;
-	a = a*8;
-
-	int i = 0;
-	for(i=0;i<3;i++){
-		b[i+29] = difficultyBYTE[i+29];
-	}
-	// printf("b = \n");
-	// print_uint256(b);
-	// printf("a = %02x\n", a);
-
-	uint256_exp(expResult, two, a);
-
-
-	uint256_mul(target, b, expResult);
+// //get target
+// 	uint32_t a;
+// 	BYTE b[32];
+// 	BYTE expResult[32];
+// 	BYTE exp[32];
+// 	BYTE target[32];
+// 	BYTE two[32];
+//
+//
+// 	uint256_init(b);
+// 	uint256_init(exp);
+// 	uint256_init(target);
+// 	uint256_init(expResult);
+// 	uint256_init(two);
+//
+//
+// 	two[31] = 0x02;
+// 	a = difficultyBYTE[28] - 3;
+// 	a = a*8;
+//
+// 	int i = 0;
+// 	for(i=0;i<3;i++){
+// 		b[i+29] = difficultyBYTE[i+29];
+// 	}
+//
+//
+// 	uint256_exp(expResult, two, a);
+//
+//
+// 	uint256_mul(target, b, expResult);
 
 
 //get x
+  int i = 0;
 	for(i=0;i<32;i++){
 		x[i] = seedBYTE[i];
 	}
 	for(i=0;i<8;i++){
 		x[i+32] = solutionBYTE[i+24];
 	}
-	// printf("x = \n");
-	// for(i=0;i<40;i++){
-	// 	printf("%02x", x[i]);
-	// }
-	// printf("\n");
 
 //hash 1
 	SHA256_CTX ctx1;
@@ -278,21 +273,51 @@ int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *solutionBYTE){
 	sha256_final(&ctx2, buf2);
 
 
-//check h(h(x)) < target
-// printf("targer= \n");
-// 	  print_uint256(target);
-// 		printf("buf 2 = \n");
-// 	  print_uint256(buf2);
-
 	return sha256_compare(target, buf2);
+}
+
+void getTarget(BYTE* target, BYTE* difficultyBYTE){
+	uint32_t a;
+	BYTE b[32];
+	BYTE expResult[32];
+	BYTE exp[32];
+	BYTE two[32];
+
+
+	uint256_init(b);
+	uint256_init(exp);
+	uint256_init(target);
+	uint256_init(expResult);
+	uint256_init(two);
+
+
+	two[31] = 0x02;
+	a = difficultyBYTE[28] - 3;
+	a = a*8;
+
+	int i = 0;
+	for(i=0;i<3;i++){
+		b[i+29] = difficultyBYTE[i+29];
+	}
+
+
+	uint256_exp(expResult, two, a);
+
+
+	uint256_mul(target, b, expResult);
+
 }
 
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE){
 	int valid = 0;
 	BYTE nonce[32];
 	BYTE one[32];
+	BYTE target[32];
+
 	uint256_init(one);
 	uint256_init(nonce);
+	getTarget(target, difficultyBYTE);
+
 	int i = 0;
 	for(i=0;i<32;i++){
 		nonce[i] = startBYTE[i];
@@ -300,12 +325,12 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 
 	one[31] = 0x01;
 
-	valid = isvalid(difficultyBYTE, seedBYTE, nonce);
+	valid = isvalid(target, seedBYTE, nonce);
 
 	while(valid != 1){
 		uint256_add(nonce, nonce, one);
-		print_uint256(nonce);
-		valid = isvalid(difficultyBYTE, seedBYTE, nonce);
+		//print_uint256(nonce);
+		valid = isvalid(target, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);
 	strncpy(buffer, "SOLN", 4);

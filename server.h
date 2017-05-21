@@ -53,12 +53,13 @@ typedef struct {
  * Output: None, plays game with the client and logs the activity.
  */
 void * work_function(void * params);
-int isvalid(BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE* solutionBYTE);
+int isvalid(BYTE *target,BYTE* seedBYTE, BYTE* solutionBYTE);
 void ctob(char* string, int stringlen, BYTE *number);
 char getcharacter(int number);
 int getval(BYTE character);
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE);
 void btoc(BYTE *number, int numberlen, char *string);
+void getTarget(BYTE* target, BYTE* difficultyBYTE);
 
 
 /* Writes out a connection log to the file.
