@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
 
 
 	}
+	close(fp);
 	return 0;
 }
 
@@ -169,19 +170,23 @@ void * work_function(void * params){
 		bzero(buffer, 256);
 		strcpy(buffer, "PONG\r\n");
 		n = write(client_info->client_fd,buffer,6);
+		pong_log(*client_info);
 		//fprintf(OUT_FILE, "To client_addr: %s; message: PONG\n", ip);
 	}else if(strcmp(buffer, "PONG\r\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO PONG message is strictly reserved for server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
+		error_log(*client_info, buffer);
 	}else if(strcmp(buffer, "OKAY\r\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO It's not okay to send 'OKAY' messages to the server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
+		error_log(*client_info, buffer);
 	}else if(strcmp(firstFour, "ERRO")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO This message should not be sent to the server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
+		error_log(*client_info, buffer);
 	}else if(strcmp(firstFour, "SOLN")==0){
 		char difficulty[9];
 		char seed[65];
@@ -204,9 +209,11 @@ void * work_function(void * params){
 		if(valid==1){
 			strcpy(buffer, "OKAY\r\n");
 			n = write(client_info->client_fd,buffer,6);
+			okay_log(*client_info);
 		}else{
 			strcpy(buffer, "ERRO not a valid solution.\r\n");
 			n = write(client_info->client_fd,buffer,80);
+			error_log(*client_info, buffer);
 		}
 
 
@@ -432,6 +439,12 @@ void pong_log(client_info_t client_info){
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message PONG\n", ip, client_info.client_fd);
 }
 void error_log(client_info_t client_info, char *msg){
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
+}
+
+void solu_log(client_info_t client_info, char *msg){
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);

@@ -60,6 +60,10 @@ void getTarget(BYTE* target, BYTE* difficultyBYTE);
  * Output: None.
  */
 void connection_log(client_info_t);
+void pong_log(client_info_t);
+void error_log(client_info_t, char*);
+void okay_log(client_info_t);
+void solu_log(client_info_t, char*);
 
 /* Writes out move logs to the output file.
  * Input: Client info struct, (SERVER_MOVE|CLIENT_MOVE), move,
