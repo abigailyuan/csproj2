@@ -85,10 +85,10 @@ int main(int argc, char *argv[]) {
 
 		client_fd	 = accept(socket_fd, (struct sockaddr *)&client_addr,
 			            &client_len);
-		//printf("client_fd is %d\n", client_fd);
+		printf("accept client_fd is %d\n", client_fd);
 		if(client_fd < 0) {
-			printf("Error accepting client.\n");
-			//perror("Error accepting client.\n");
+			//printf("Error accepting client.\n");
+			perror("Error accepting client.\n");
 			exit(EXIT_FAILURE);
 		}
 		/* The server will communicate to the client on a new thread */
@@ -115,6 +115,8 @@ int main(int argc, char *argv[]) {
 		if(pthread_detach(thread_id)) {
 			fprintf(stderr, "Failed to detach thead.\n");
 			exit(EXIT_FAILURE);
+		}else{
+			fprintf(stderr, "thread detached.\n");
 		}
 	}
 	return 0;
@@ -122,7 +124,7 @@ int main(int argc, char *argv[]) {
 
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
-
+	fprintf(stderr, "create thread for a new client.\n");
 	char buffer[256];
 	int n;
 	bzero(buffer,256);
@@ -165,7 +167,7 @@ void * work_function(void * params){
 		char solution[17];
 
 		BYTE difficultyBYTE[32];
-		BYTE seedBYTE[32];
+		BYTE seedBYTE[40];
 		BYTE solutionBYTE[32];
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
@@ -193,7 +195,7 @@ void * work_function(void * params){
 		char start[17];
 
 		BYTE difficultyBYTE[32];
-		BYTE seedBYTE[32];
+		BYTE seedBYTE[40];
 		BYTE startBYTE[32];
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
@@ -213,7 +215,7 @@ void * work_function(void * params){
 		exit(1);
 	}
 }
-int isvalid(BYTE* target, BYTE* seedBYTE,BYTE *solutionBYTE){
+int isvalid(BYTE* target, BYTE* seedBYTE, BYTE *solutionBYTE){
 
 	 BYTE x[40];
 
@@ -250,19 +252,23 @@ int isvalid(BYTE* target, BYTE* seedBYTE,BYTE *solutionBYTE){
 
 
 //get x
-  int i = 0;
-	for(i=0;i<32;i++){
-		x[i] = seedBYTE[i];
-	}
+  // int i = 0;
+	// for(i=0;i<32;i++){
+	// 	x[i] = seedBYTE[i];
+	// }
+	// for(i=0;i<8;i++){
+	// 	x[i+32] = solutionBYTE[i+24];
+	// }
+	int i = 0;
 	for(i=0;i<8;i++){
-		x[i+32] = solutionBYTE[i+24];
+		seedBYTE[i+32] = solutionBYTE[i+24];
 	}
 
 //hash 1
 	SHA256_CTX ctx1;
 	BYTE buf[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx1);
-	sha256_update(&ctx1, x, 40);
+	sha256_update(&ctx1, seedBYTE, 40);
 	sha256_final(&ctx1, buf);
 
 //hash 2
@@ -329,7 +335,7 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 
 	while(valid != 1){
 		uint256_add(nonce, nonce, one);
-		//print_uint256(nonce);
+
 		valid = isvalid(target, seedBYTE, nonce);
 	}
 	bzero(buffer, 4);

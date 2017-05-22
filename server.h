@@ -44,7 +44,7 @@ typedef struct {
 #define DIFFICULTY_LEN 4
 #define SEED_LEN 32
 #define SOLUTION_LEN 8
-#define MAX_CLIENTS 1000
+#define MAX_CLIENTS 100
 /*---------------------------------------------------------------------*/
 
 /*------------------------- Functional prototypes ---------------------*/
