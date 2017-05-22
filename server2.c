@@ -94,6 +94,16 @@ int main(int argc, char *argv[]) {
 			perror("Error accepting client.\n");
 			exit(EXIT_FAILURE);
 		}
+
+    //close socket when reach max client num
+    if(client_num >= MAX_CLIENTS){
+      close(client_fd);
+      printf("%d closed\n", client_fd);
+      printf("number of client %d\n", client_num);
+      client_num--;
+    }
+    continue;
+
 		/* The server will communicate to the client on a new thread */
 		/* Create a structure to pass in client information to the new
 		 * thread.
@@ -121,19 +131,7 @@ int main(int argc, char *argv[]) {
 		}else{
 			fprintf(stderr, "thread detached.\n");
 		}
-    int fd = client_fd;
-    while(client_num >= MAX_CLIENTS){
-      // int fd = client_fd;
-      // for(fd = 4;fd < client_fd;fd++){
-      //   close(fd);
-      //   client_num--;
-      // }
-      close(fd);
-      printf("%d closed\n", fd);
-      printf("number of client %d\n", client_num);
-      fd--;
-      client_num--;
-    }
+
 
 	}
 	return 0;
