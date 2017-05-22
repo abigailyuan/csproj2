@@ -7,6 +7,15 @@ The port number is passed as an argument
 
 #include "server.h"
 
+typedef struct {
+	BYTE seed[32];
+	BYTE target[32];
+	BYTE start[32];
+	int client_fd;
+}work_job_t
+
+int head = 0;
+work_job_t[10];
 
 int main(int argc, char *argv[]) {
 
@@ -191,6 +200,9 @@ void * work_function(void * params){
 
 
 	}else if(strcmp(firstFour, "WORK")==0){
+		if(work_num >= MAX_WORK){
+			
+		}
 		char difficulty[9];
 		char seed[65];
 		char start[17];

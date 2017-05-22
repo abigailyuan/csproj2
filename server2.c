@@ -8,6 +8,17 @@ The port number is passed as an argument
 #include "server.h"
 
 int client_num = 0;
+int work_num = 0;
+
+typedef struct {
+	BYTE seed[32];
+	BYTE target[32];
+	BYTE start[32];
+	int client_fd;
+}work_job_t;
+
+int head = 0;
+work_job_t work_queue[10];
 
 int main(int argc, char *argv[]) {
 
@@ -101,8 +112,9 @@ int main(int argc, char *argv[]) {
       printf("%d closed\n", client_fd);
       printf("number of client %d\n", client_num);
       client_num--;
+      continue;
     }
-    continue;
+
 
 		/* The server will communicate to the client on a new thread */
 		/* Create a structure to pass in client information to the new
@@ -136,9 +148,7 @@ int main(int argc, char *argv[]) {
 	}
 	return 0;
 }
-void * socket_func(){
 
-}
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
 	fprintf(stderr, "create thread for a new client.\n");
@@ -207,6 +217,13 @@ void * work_function(void * params){
 
 
 	}else if(strcmp(firstFour, "WORK")==0){
+    work_num++;
+    printf("current work job %d\n", work_num);
+    if(work_num >= MAX_WORK){
+			n = write(client_info->client_fd, buffer, strlen(buffer));
+		}else{
+
+
 		char difficulty[9];
 		char seed[65];
 		char start[17];
@@ -222,9 +239,10 @@ void * work_function(void * params){
 		ctob(seed, 64, seedBYTE);
 		ctob(start, 16, startBYTE);
 		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
-
+    work_num--;
 		n = write(client_info->client_fd,buffer,strlen(buffer));
 	}
+}
 	//n = write(client_info->client_fd,buffer,255);
 
 	if (n < 0) {
