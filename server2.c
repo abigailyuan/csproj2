@@ -7,6 +7,7 @@ The port number is passed as an argument
 
 #include "server.h"
 
+int client_num = 0;
 
 int main(int argc, char *argv[]) {
 
@@ -85,6 +86,7 @@ int main(int argc, char *argv[]) {
 
 		client_fd	 = accept(socket_fd, (struct sockaddr *)&client_addr,
 			            &client_len);
+    client_num++;
 		printf("socket_fd is %d\n", socket_fd);
 		printf("accept client_fd is %d\n", client_fd);
 		if(client_fd < 0) {
@@ -119,10 +121,26 @@ int main(int argc, char *argv[]) {
 		}else{
 			fprintf(stderr, "thread detached.\n");
 		}
+    int fd = client_fd;
+    while(client_num >= MAX_CLIENTS){
+      // int fd = client_fd;
+      // for(fd = 4;fd < client_fd;fd++){
+      //   close(fd);
+      //   client_num--;
+      // }
+      close(fd);
+      printf("%d closed\n", fd);
+      printf("number of client %d\n", client_num);
+      fd--;
+      client_num--;
+    }
+
 	}
 	return 0;
 }
+void * socket_func(){
 
+}
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
 	fprintf(stderr, "create thread for a new client.\n");
