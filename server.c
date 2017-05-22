@@ -201,7 +201,7 @@ void * work_function(void * params){
 
 	}else if(strcmp(firstFour, "WORK")==0){
 		if(work_num >= MAX_WORK){
-			
+
 		}
 		char difficulty[9];
 		char seed[65];
@@ -221,7 +221,7 @@ void * work_function(void * params){
 
 		n = write(client_info->client_fd,buffer,strlen(buffer));
 	}
-	//n = write(client_info->client_fd,buffer,255);
+	
 
 	if (n < 0) {
 		perror("ERROR writing to socket");

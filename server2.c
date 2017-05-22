@@ -10,20 +10,11 @@ The port number is passed as an argument
 int client_num = 0;
 int work_num = 0;
 
-typedef struct {
-	BYTE seed[32];
-	BYTE target[32];
-	BYTE start[32];
-	int client_fd;
-}work_job_t;
-
-int head = 0;
-work_job_t work_queue[10];
-
 int main(int argc, char *argv[]) {
 
 	int socket_fd, portno, clilen;
 	char buffer[256];
+
 
 	/* Ensure the port number was provided. */
 	if(argc < N_ARGS) {
@@ -43,7 +34,7 @@ int main(int argc, char *argv[]) {
 		printf("Failed to create log file.\n");
 		exit(EXIT_FAILURE);
 	}
-	fclose(fp);
+	//fclose(fp);
 
 	/* Get a socket to listen on */
 	//int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
@@ -128,7 +119,7 @@ int main(int argc, char *argv[]) {
 		info->server_addr = server_addr;
 		info->newsocket_fd = socket_fd;
 		/* Log this connection. */
-		//connection_log(*info);
+		connection_log(*info);
 
 		/* Create this new thread*/
 		pthread_t thread_id;
@@ -151,14 +142,16 @@ int main(int argc, char *argv[]) {
 
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
-	fprintf(stderr, "create thread for a new client.\n");
+
 	char buffer[256];
 	int n;
 	bzero(buffer,256);
 
 	/* Read characters from the connection,
 		then process */
-	//printf("%d\n", client_info->client_fd);
+	while(1){
+
+
 	n = read(client_info->client_fd,buffer,255);
 
 	if (n < 0) {
@@ -176,6 +169,7 @@ void * work_function(void * params){
 		bzero(buffer, 256);
 		strcpy(buffer, "PONG\r\n");
 		n = write(client_info->client_fd,buffer,6);
+		//fprintf(OUT_FILE, "To client_addr: %s; message: PONG\n", ip);
 	}else if(strcmp(buffer, "PONG\r\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO PONG message is strictly reserved for server.\r\n");
@@ -242,6 +236,11 @@ void * work_function(void * params){
     work_num--;
 		n = write(client_info->client_fd,buffer,strlen(buffer));
 	}
+}else if(strcmp(firstFour, "ABRT")==0){
+	strcpy(buffer, "OKAY\r\n");
+	n = write(client_info->client_fd,buffer,6);
+	//TODO find work and delete
+	break;
 }
 	//n = write(client_info->client_fd,buffer,255);
 
@@ -250,63 +249,25 @@ void * work_function(void * params){
 		exit(1);
 	}
 }
+}
+
 int isvalid(BYTE* target, BYTE* seedBYTE, BYTE *solutionBYTE){
 
 	 BYTE x[40];
 
-// //get target
-// 	uint32_t a;
-// 	BYTE b[32];
-// 	BYTE expResult[32];
-// 	BYTE exp[32];
-// 	BYTE target[32];
-// 	BYTE two[32];
-//
-//
-// 	uint256_init(b);
-// 	uint256_init(exp);
-// 	uint256_init(target);
-// 	uint256_init(expResult);
-// 	uint256_init(two);
-//
-//
-// 	two[31] = 0x02;
-// 	a = difficultyBYTE[28] - 3;
-// 	a = a*8;
-//
-// 	int i = 0;
-// 	for(i=0;i<3;i++){
-// 		b[i+29] = difficultyBYTE[i+29];
-// 	}
-//
-//
-// 	uint256_exp(expResult, two, a);
-//
-//
-// 	uint256_mul(target, b, expResult);
-
-
-//get x
-  // int i = 0;
-	// for(i=0;i<32;i++){
-	// 	x[i] = seedBYTE[i];
-	// }
-	// for(i=0;i<8;i++){
-	// 	x[i+32] = solutionBYTE[i+24];
-	// }
 	int i = 0;
 	for(i=0;i<8;i++){
 		seedBYTE[i+32] = solutionBYTE[i+24];
 	}
 
-//hash 1
+  //hash 1
 	SHA256_CTX ctx1;
 	BYTE buf[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx1);
 	sha256_update(&ctx1, seedBYTE, 40);
 	sha256_final(&ctx1, buf);
 
-//hash 2
+  //hash 2
 	SHA256_CTX ctx2;
 	BYTE buf2[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx2);
@@ -412,8 +373,6 @@ void btoc(BYTE *number, int numberlen, char *string){
 
 }
 
-
-
 int getval(BYTE character){
 	switch (character) {
 		case '0': return 0;
@@ -434,6 +393,7 @@ int getval(BYTE character){
 		case 'f': return 15;
 	}
 }
+
 char getcharacter(int number){
 	switch (number) {
 		case 0: return '0';
@@ -453,4 +413,26 @@ char getcharacter(int number){
 		case 14: return 'e';
 		case 15: return 'f';
 	}
+}
+
+void connection_log(client_info_t client_info){
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "CONNECTION  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
+}
+
+void okay_log(client_info_t client_info){
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message OKAY\n", ip, client_info.client_fd);
+}
+void pong_log(client_info_t client_info){
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message PONG\n", ip, client_info.client_fd);
+}
+void error_log(client_info_t client_info, char *msg){
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
 }

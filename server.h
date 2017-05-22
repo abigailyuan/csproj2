@@ -11,17 +11,8 @@
 /*-------------------------- Libraries --------------------------------*/
 #ifndef SERVER_H
 #define SERVER_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
-#include <pthread.h>
-#include <time.h>
-#include <arpa/inet.h>
-#include "sha256.h"
-#include "uint256.h"
+
+#include "work.h"
 /*---------------------------------------------------------------------*/
 
 
@@ -61,6 +52,7 @@ int getval(BYTE character);
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE);
 void btoc(BYTE *number, int numberlen, char *string);
 void getTarget(BYTE* target, BYTE* difficultyBYTE);
+
 
 
 /* Writes out a connection log to the file.

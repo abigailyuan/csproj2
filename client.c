@@ -130,5 +130,26 @@ int main(int argc, char**argv)
 
 	printf("%s\n",buffer);
 
+	bzero(buffer, 256);
+	strcpy(buffer, "ABRT\r\n");
+	n = write(sockfd, buffer, strlen(buffer));
+	if (n < 0)
+	{
+		perror("ERROR writing to socket");
+		exit(0);
+	}
+
+	bzero(buffer,256);
+
+	n = read(sockfd,buffer,255);
+
+	if (n < 0)
+	{
+		perror("ERROR reading from socket");
+		exit(0);
+	}
+
+	printf("%s\n",buffer);
+
 	return 0;
 }
