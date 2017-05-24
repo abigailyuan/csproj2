@@ -13,7 +13,7 @@
 #define SERVER_H
 
 #include "work.h"
-#include "string-helper-functions.c"
+
 /*---------------------------------------------------------------------*/
 
 
@@ -36,8 +36,8 @@ typedef struct {
 #define DIFFICULTY_LEN 4
 #define SEED_LEN 32
 #define SOLUTION_LEN 8
-#define MAX_CLIENTS 100
-#define MAX_WORK 10
+#define MAX_CLIENTS 110
+#define MAX_WORK 12
 /*---------------------------------------------------------------------*/
 
 /*------------------------- Functional prototypes ---------------------*/
