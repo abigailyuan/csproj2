@@ -105,6 +105,15 @@ int main(int argc, char**argv)
 
 	//strcpy(buffer, "WORK 1d29ffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212399 04\r\n");
 
+	//strcpy(buffer, "WORK 1fffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212399 01\r\n");
+
+	//strcpy(buffer, "WORK 1effffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212399 01\r\n");
+
+	//strcpy(buffer, "WORK 1dffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023a12399 01\r\n");
+
+	//strcpy(buffer, "WORK 1d29ffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f c40000000ce40000 01\r\n");
+	//strcpy(buffer, "1d29ffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f c40000000ce40000 01\r\n");
+
 
 
     printf("%s\n", buffer);
@@ -112,6 +121,27 @@ int main(int argc, char**argv)
 
 	n = write(sockfd,buffer,strlen(buffer));
 
+	if (n < 0)
+	{
+		perror("ERROR writing to socket");
+		exit(0);
+	}
+
+	bzero(buffer,256);
+
+	n = read(sockfd,buffer,255);
+
+	if (n < 0)
+	{
+		perror("ERROR reading from socket");
+		exit(0);
+	}
+
+	printf("%s\n",buffer);
+
+	bzero(buffer, 256);
+	strcpy(buffer, "PONG\r\n");
+	n = write(sockfd, buffer, strlen(buffer));
 	if (n < 0)
 	{
 		perror("ERROR writing to socket");

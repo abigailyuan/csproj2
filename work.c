@@ -1,9 +1,7 @@
 #include "work.h"
 
-extern struct work_job_t *head = NULL;
-extern struct work_job_t *curr = NULL;
 
-struct test_struct* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id){
+struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, struct work_job_t* head, struct work_job_t* curr){
     printf("\n creating list with headnode as [%d]\n",id);
     struct work_job_t *ptr = (struct work_job_t*)malloc(sizeof(struct work_job_t));
     if(NULL == ptr)
@@ -23,11 +21,11 @@ struct test_struct* create_list(BYTE *seed, BYTE *target, BYTE *start, int clien
     return ptr;
 }
 
-struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end)
+struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end, struct work_job_t* head, struct work_job_t* curr)
 {
     if(NULL == head)
     {
-        return (create_list(seed, target, start, client_fd, id));
+        return (create_list(seed, target, start, client_fd, id, head, curr));
     }
 
     if(add_to_end)
@@ -65,7 +63,7 @@ struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client
     return ptr;
 }
 
-struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev)
+struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev, struct work_job_t* head, struct work_job_t* curr)
 {
     struct work_job_t *ptr = head;
     struct work_job_t *tmp = NULL;
@@ -100,14 +98,14 @@ struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev)
     }
 }
 
-int delete_from_list(int client_fd)
+int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t* curr)
 {
     struct work_job_t *prev = NULL;
     struct work_job_t *del = NULL;
 
     printf("\n Deleting client_fd [%d] from list\n",client_fd);
 
-    del = search_in_list(client_fd,&prev);
+    del = search_in_list(client_fd,&prev, head, curr);
 
     if(del == NULL)
     {
@@ -131,14 +129,14 @@ int delete_from_list(int client_fd)
       }
 
       free(del);
-      del = search_in_list(client_fd,&prev);
+      del = search_in_list(client_fd,&prev, head, curr);
     }
     del = NULL;
 
     return 0;
 }
 
-void print_list(void)
+void print_list(struct work_job_t* head, struct work_job_t* curr)
 {
     struct work_job_t *ptr = head;
 

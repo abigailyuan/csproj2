@@ -52,6 +52,7 @@ int getval(BYTE character);
 char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, BYTE *startBYTE);
 void btoc(BYTE *number, int numberlen, char *string);
 void getTarget(BYTE* target, BYTE* difficultyBYTE);
+void receive_log(client_info_t client_info, char *msg);
 
 
 

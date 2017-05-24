@@ -10,6 +10,10 @@ The port number is passed as an argument
 int client_num = 0;
 int work_num = 0;
 
+extern struct work_job_t *head = NULL;
+extern struct work_job_t *curr = NULL;
+
+
 int main(int argc, char *argv[]) {
 
 	int socket_fd, portno, clilen;
@@ -34,7 +38,7 @@ int main(int argc, char *argv[]) {
 		printf("Failed to create log file.\n");
 		exit(EXIT_FAILURE);
 	}
-	//fclose(fp);
+	fclose(fp);
 
 	/* Get a socket to listen on */
 	//int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
@@ -134,33 +138,48 @@ int main(int argc, char *argv[]) {
 		}else{
 			fprintf(stderr, "thread detached.\n");
 		}
-
-
 	}
-	close(fp);
+	//close(fp);
 	return 0;
 }
 
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
 
-	char buffer[256];
-	int n;
-	bzero(buffer,256);
+	 char buffer[256];
+	 int n;
+	 bzero(buffer,256);
 
 	/* Read characters from the connection,
 		then process */
-	while(1){
+while(1){
 
-
+//printf("aaaaaaa\n");
+  bzero(buffer, 256);
 	n = read(client_info->client_fd,buffer,255);
 
 	if (n < 0) {
 		perror("ERROR reading from socket");
-		exit(1);
+		close(client_info->client_fd);
+		break;
+		//exit(1);
+		//return 0;
+	}
+	// if(strlen(buffer) == 0){
+	// 	bzero(buffer, 256);
+	// 	continue;
+	// }else{
+	// 	receive_log(*client_info, buffer);
+	// }
+	if(strlen(buffer) != 0){
+		receive_log(*client_info, buffer);
+
+	}else{
+		continue;
 	}
 
 	printf("%s\n",buffer);
+
 
 	char firstFour[5];
 	strncpy(&firstFour, buffer, 4);
@@ -221,6 +240,7 @@ void * work_function(void * params){
     work_num++;
     printf("current work job %d\n", work_num);
     if(work_num >= MAX_WORK){
+			bzero(buffer, 256);
 			n = write(client_info->client_fd, buffer, strlen(buffer));
 		}else{
 
@@ -242,12 +262,17 @@ void * work_function(void * params){
 		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
     work_num--;
 		n = write(client_info->client_fd,buffer,strlen(buffer));
+		solu_log(*client_info, buffer);
 	}
 }else if(strcmp(firstFour, "ABRT")==0){
 	strcpy(buffer, "OKAY\r\n");
 	n = write(client_info->client_fd,buffer,6);
 	//TODO find work and delete
-	break;
+	okay_log(*client_info);
+}else{
+	strcpy(buffer, "ERRO\r\n");
+	n = write(client_info->client_fd,buffer,80);
+	error_log(*client_info, buffer);
 }
 	//n = write(client_info->client_fd,buffer,255);
 
@@ -327,27 +352,27 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 	uint256_init(nonce);
 	getTarget(target, difficultyBYTE);
 
-	int i = 0;
-	for(i=0;i<32;i++){
-		nonce[i] = startBYTE[i];
-	}
+	// int i = 0;
+	// for(i=0;i<32;i++){
+	// 	nonce[i] = startBYTE[i];
+	// }
+	//
+	// one[31] = 0x01;
+	//
+	// valid = isvalid(target, seedBYTE, nonce);
+	//
+	// while(valid != 1){
+	// 	uint256_add(nonce, nonce, one);
+	//
+	// 	valid = isvalid(target, seedBYTE, nonce);
+	// }
+	// bzero(buffer, 4);
+	// strncpy(buffer, "SOLN", 4);
+	// char solution[17];
+	// btoc(nonce+24, 16, solution);
+	// bzero(buffer+79, 20);
+	// strncpy(buffer+79, solution, 16);
 
-	one[31] = 0x01;
-
-	valid = isvalid(target, seedBYTE, nonce);
-
-	while(valid != 1){
-		uint256_add(nonce, nonce, one);
-
-		valid = isvalid(target, seedBYTE, nonce);
-	}
-	bzero(buffer, 4);
-	strncpy(buffer, "SOLN", 4);
-	char solution[17];
-	btoc(nonce+24, 16, solution);
-	bzero(buffer+79, 20);
-	strncpy(buffer+79, solution, 16);
-	printf("\n");
 }
 
 void ctob(char* string, int stringlen, BYTE *number){
@@ -423,29 +448,86 @@ char getcharacter(int number){
 }
 
 void connection_log(client_info_t client_info){
+	FILE *fp=fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "CONNECTION  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
+	fclose(fp);
 }
 
 void okay_log(client_info_t client_info){
+	FILE *fp=fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message OKAY\n", ip, client_info.client_fd);
+	fclose(fp);
 }
 void pong_log(client_info_t client_info){
+	FILE *fp=fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message PONG\n", ip, client_info.client_fd);
+	fclose(fp);
 }
 void error_log(client_info_t client_info, char *msg){
+	FILE *fp=fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
+	fclose(fp);
 }
 
 void solu_log(client_info_t client_info, char *msg){
+	FILE *fp=fopen("log.txt", "a");
+	if(fp == NULL){
+		printf("failed to open log\n");
+	}
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
 	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
+	fclose(fp);
+}
+
+void receive_log(client_info_t client_info, char *msg) {
+	FILE *fp = fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "FROM client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
+	fclose(fp);
+}
+
+void disconnect_log(client_info_t client_info){
+	FILE *fp=fopen("log.txt", "a");
+	time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	char ip[20];
+	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
+	fprintf(fp, "DISCONNECT  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
+	fclose(fp);
+}
+
+void do_work(){
+	while(head != NULL){
+		printf("have work in queue\n");
+		//work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
+	}
 }
