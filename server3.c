@@ -10,15 +10,20 @@ The port number is passed as an argument
 int client_num = 0;
 int work_num = 0;
 
-extern struct work_job_t *head = NULL;
-extern struct work_job_t *curr = NULL;
+typedef struct {
+	BYTE seed[32];
+	BYTE target[32];
+	BYTE start[32];
+	int client_fd;
+}work_job_t;
 
+int head = 0;
+work_job_t work_queue[10];
 
 int main(int argc, char *argv[]) {
 
 	int socket_fd, portno, clilen;
 	char buffer[256];
-
 
 	/* Ensure the port number was provided. */
 	if(argc < N_ARGS) {
@@ -83,6 +88,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Failed to listen.\n");
 		exit(EXIT_FAILURE);
 	}
+	//printf("Listening on port %d....\n", atoi(argv[1]));
 
 	/* Accept requests from clients */
 	while(TRUE) {
@@ -137,36 +143,29 @@ int main(int argc, char *argv[]) {
 		}else{
 			fprintf(stderr, "thread detached.\n");
 		}
+
+
 	}
 	return 0;
 }
 
 void * work_function(void * params){
 	client_info_t *client_info = (client_info_t *)params;
-
-	 char buffer[256];
-	 int n;
-	 bzero(buffer,256);
+	fprintf(stderr, "create thread for a new client.\n");
+	char buffer[256];
+	int n;
+	bzero(buffer,256);
 
 	/* Read characters from the connection,
 		then process */
-while(1){
-  bzero(buffer, 256);
 	n = read(client_info->client_fd,buffer,255);
 
 	if (n < 0) {
 		perror("ERROR reading from socket");
-		close(client_info->client_fd);
-		pthread_exit(NULL);
+		exit(1);
 	}
-	if(buffer[0] == '\0'){
-		close(client_info->client_fd);
-		client_num--;
-		pthread_exit(NULL);
-	}
-	if(strlen(buffer) != 0){
-		receive_log(*client_info, buffer);
-	}
+
+	printf("%s\n",buffer);
 
 	char firstFour[5];
 	strncpy(&firstFour, buffer, 4);
@@ -175,44 +174,23 @@ while(1){
 		bzero(buffer, 256);
 		strcpy(buffer, "PONG\r\n");
 		n = write(client_info->client_fd,buffer,6);
-		if (n < 0) {
-			perror("ERROR reading from socket");
-			close(client_info->client_fd);
-			pthread_exit(NULL);
-		}
-		pong_log(*client_info);
-
+                pong_log(*client_info);
 	}else if(strcmp(buffer, "PONG\r\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO PONG message is strictly reserved for server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
-		if (n < 0) {
-			perror("ERROR reading from socket");
-			close(client_info->client_fd);
-			pthread_exit(NULL);;
-		}
-		error_log(*client_info, buffer);
+                error_log(*client_info, buffer);
 	}else if(strcmp(buffer, "OKAY\r\n")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO It's not okay to send 'OKAY' messages to the server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
-		if (n < 0) {
-			perror("ERROR reading from socket");
-			close(client_info->client_fd);
-			pthread_exit(NULL);;
-		}
-		error_log(*client_info, buffer);
+                error_log(*client_info, buffer);
 	}else if(strcmp(firstFour, "ERRO")==0){
 		bzero(buffer, 256);
 		strcpy(buffer, "ERRO This message should not be sent to the server.\r\n");
 		n = write(client_info->client_fd,buffer,80);
-		if (n < 0) {
-			perror("ERROR reading from socket");
-			close(client_info->client_fd);
-			pthread_exit(NULL);;
-		}
-		error_log(*client_info, buffer);
-	}else if((strcmp(firstFour, "SOLN")==0) && (strlen(buffer) == 97)){
+                error_log(*client_info, buffer);
+	}else if(strcmp(firstFour, "SOLN")==0){
 		char difficulty[9];
 		char seed[65];
 		char solution[17];
@@ -223,189 +201,74 @@ while(1){
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
 		memcpy(&solution, buffer+79, 16);
-		int flag = 0;
-		int check = 0;
-		for(check=0;check<8;check++){
-			if(difficulty[check]=='\0'){
-				flag = 1;
-				break;
-			}
-		}
-		if(flag==0){
-			for(check=0;check<64;check++){
-				if(seed[check]=='\0'){
-					flag = 1;
-					break;
-				}
-			}
-		}
-		if(flag==0){
-			for(check=0;check<16;check++){
-				if(solution[check]=='\0'){
-					flag = 1;
-					break;
-				}
-			}
-		}
-		if(flag){
-			bzero(buffer, 256);
-			strcpy(buffer, "ERRO \r\n");
-			n = write(client_info->client_fd, buffer, strlen(buffer));
-			if (n < 0) {
-				perror("ERROR reading from socket");
-				close(client_info->client_fd);
-				pthread_exit(NULL);;
-			}
+
+		ctob(difficulty, 8, difficultyBYTE);
+		ctob(seed, 64, seedBYTE);
+		ctob(solution, 16, solutionBYTE);
+		BYTE target[32];
+		getTarget(target, difficultyBYTE);
+		int valid = isvalid(target, seedBYTE, solutionBYTE);
+		bzero(buffer, 256);
+		if(valid==1){
+			strcpy(buffer, "OKAY\r\n");
+			n = write(client_info->client_fd,buffer,6);
+                        okay_log(*client_info);
 		}else{
-			ctob(difficulty, 8, difficultyBYTE);
-			ctob(seed, 64, seedBYTE);
-			ctob(solution, 16, solutionBYTE);
-			BYTE target[32];
-			getTarget(target, difficultyBYTE);
-			int valid = isvalid(target, seedBYTE, solutionBYTE);
-			bzero(buffer, 256);
-			if(valid==1){
-				strcpy(buffer, "OKAY\r\n");
-				n = write(client_info->client_fd,buffer,6);
-				if (n < 0) {
-					perror("ERROR reading from socket");
-					close(client_info->client_fd);
-					pthread_exit(NULL);;
-				}
-				okay_log(*client_info);
-			}else{
-				strcpy(buffer, "ERRO not a valid solution.\r\n");
-				n = write(client_info->client_fd,buffer,80);
-				if (n < 0) {
-					perror("ERROR reading from socket");
-					close(client_info->client_fd);
-					pthread_exit(NULL);;
-				}
-				error_log(*client_info, buffer);
-			}
+			strcpy(buffer, "ERRO not a valid solution.\r\n");
+			n = write(client_info->client_fd,buffer,80);
+                        error_log(*client_info, buffer);
 		}
+
+
 	}else if(strcmp(firstFour, "WORK")==0){
     work_num++;
     printf("current work job %d\n", work_num);
-    if(work_num >= MAX_WORK || strlen(buffer) != 100){
-			bzero(buffer, 256);
-			strcpy(buffer, "ERRO \r\n");
+    if(work_num >= MAX_WORK){
 			n = write(client_info->client_fd, buffer, strlen(buffer));
-			if (n < 0) {
-				perror("ERROR reading from socket");
-				close(client_info->client_fd);
-				pthread_exit(NULL);;
-			}
 		}else{
+
 
 		char difficulty[9];
 		char seed[65];
 		char start[17];
-		char counter[3];
 
 		BYTE difficultyBYTE[32];
 		BYTE seedBYTE[40];
 		BYTE startBYTE[32];
-
 		memcpy(&difficulty, buffer+5, 8);
 		memcpy(&seed, buffer+14, 64);
 		memcpy(&start, buffer+79, 16);
-		memcpy(&counter, buffer+96, 2);
 
-		int flag = 0;
-		int check = 0;
-		for(check=0;check<2;check++){
-			if(counter[check]== '\0'){
-				flag = 1;
-				break;
-			}
-		}
-		for(check=0;check<8;check++){
-			if(difficulty[check]=='\0'){
-				flag = 1;
-				break;
-			}
-		}
-		if(flag==0){
-			for(check=0;check<64;check++){
-				if(seed[check]=='\0'){
-					flag = 1;
-					break;
-				}
-			}
-		}
-		if(flag==0){
-			for(check=0;check<16;check++){
-				if(start[check]=='\0'){
-					flag = 1;
-					break;
-				}
-			}
-		}
-		if(flag){
-			bzero(buffer, 256);
-			strcpy(buffer, "ERRO \r\n");
-			n = write(client_info->client_fd, buffer, strlen(buffer));
-			if (n < 0) {
-				perror("ERROR reading from socket");
-				close(client_info->client_fd);
-				pthread_exit(NULL);;
-			}
-		}else{
-			ctob(difficulty, 8, difficultyBYTE);
-			ctob(seed, 64, seedBYTE);
-			ctob(start, 16, startBYTE);
-			work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
-	    work_num--;
-			n = write(client_info->client_fd,buffer,strlen(buffer));
-			if (n < 0) {
-				perror("ERROR reading from socket");
-				close(client_info->client_fd);
-				pthread_exit(NULL);;
-			}
-			solu_log(*client_info, buffer);
-		}
+		ctob(difficulty, 8, difficultyBYTE);
+		ctob(seed, 64, seedBYTE);
+		ctob(start, 16, startBYTE);
+		work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
+    work_num--;
+		n = write(client_info->client_fd,buffer,strlen(buffer));
 	}
-}else if(strcmp(firstFour, "ABRT")==0){
-	strcpy(buffer, "OKAY\r\n");
-	n = write(client_info->client_fd,buffer,6);
-	if (n < 0) {
-		perror("ERROR reading from socket");
-		close(client_info->client_fd);
-		pthread_exit(NULL);;
-	}
-	//TODO find work and delete
-	okay_log(*client_info);
-}else{
-	strcpy(buffer, "ERRO\r\n");
-	n = write(client_info->client_fd,buffer,80);
-	if (n < 0) {
-		perror("ERROR reading from socket");
-		close(client_info->client_fd);
-		pthread_exit(NULL);;
-	}
-	error_log(*client_info, buffer);
-}
-}
 }
 
+	if (n < 0) {
+		perror("ERROR writing to socket");
+		exit(1);
+	}
+}
 int isvalid(BYTE* target, BYTE* seedBYTE, BYTE *solutionBYTE){
 
 	 BYTE x[40];
-
-	int i = 0;
+        int i = 0;
 	for(i=0;i<8;i++){
 		seedBYTE[i+32] = solutionBYTE[i+24];
 	}
 
-  //hash 1
+//hash 1
 	SHA256_CTX ctx1;
 	BYTE buf[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx1);
 	sha256_update(&ctx1, seedBYTE, 40);
 	sha256_final(&ctx1, buf);
 
-  //hash 2
+//hash 2
 	SHA256_CTX ctx2;
 	BYTE buf2[SHA256_BLOCK_SIZE];
 	sha256_init(&ctx2);
@@ -478,7 +341,7 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 	btoc(nonce+24, 16, solution);
 	bzero(buffer+79, 20);
 	strncpy(buffer+79, solution, 16);
-
+	printf("\n");
 }
 
 void ctob(char* string, int stringlen, BYTE *number){
@@ -511,6 +374,8 @@ void btoc(BYTE *number, int numberlen, char *string){
 
 }
 
+
+
 int getval(BYTE character){
 	switch (character) {
 		case '0': return 0;
@@ -531,7 +396,6 @@ int getval(BYTE character){
 		case 'f': return 15;
 	}
 }
-
 char getcharacter(int number){
 	switch (number) {
 		case 0: return '0';
@@ -554,100 +418,59 @@ char getcharacter(int number){
 }
 
 void connection_log(client_info_t client_info){
-	FILE *fp=fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
+	time_t rawtime;
+        struct tm * timeinfo;
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "CONNECTION  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
-	fprintf(stderr, "CONNECTION  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
-	fclose(fp);
+	fprintf(fp, "%s CONNECTION  client_addr %s   client_fd %d\n",asctime(timeinfo), ip, client_info.client_fd);
 }
 
 void okay_log(client_info_t client_info){
-	FILE *fp=fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
+	time_t rawtime;
+        struct tm * timeinfo;
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message OKAY\n", ip, client_info.client_fd);
-	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message OKAY\n", ip, client_info.client_fd);
-	fclose(fp);
+	fprintf(fp, "%s SEND TO  client_addr %s   client_fd %d  message OKAY\n",asctime(timeinfo),  ip, client_info.client_fd);
 }
 void pong_log(client_info_t client_info){
-	FILE *fp=fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
+        time_t rawtime;
+        struct tm * timeinfo;
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message PONG\n", ip, client_info.client_fd);
-	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message PONG\n", ip, client_info.client_fd);
-	fclose(fp);
+	fprintf(fp, "%s SEND TO  client_addr %s   client_fd %d  message PONG\n",asctime(timeinfo), ip, client_info.client_fd);
 }
 void error_log(client_info_t client_info, char *msg){
-	FILE *fp=fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
+	time_t rawtime;
+        struct tm * timeinfo;
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fclose(fp);
+	fprintf(fp, "%s SEND TO  client_addr %s   client_fd %d  message %s\n",asctime(timeinfo),  ip, client_info.client_fd, msg);
 }
 
 void solu_log(client_info_t client_info, char *msg){
-	FILE *fp=fopen("log.txt", "a");
-	if(fp == NULL){
-		printf("failed to open log\n");
-	}
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
+	time_t rawtime;
+        struct tm * timeinfo;
+
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+
+        char ip[20];
 	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fclose(fp);
-}
-
-void receive_log(client_info_t client_info, char *msg) {
-	FILE *fp = fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
-	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "FROM client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fprintf(stderr, "FROM client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
-	fclose(fp);
-}
-
-void disconnect_log(client_info_t client_info){
-	FILE *fp=fopen("log.txt", "a");
-	time_t t = time(NULL);
-  struct tm tm = *localtime(&t);
-  fprintf(fp, "Timestamp: %d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1,tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	char ip[20];
-	inet_ntop(AF_INET, &(client_info.client_addr.sin_addr), ip, 20);
-	fprintf(fp, "DISCONNECT  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
-	fprintf(stderr, "DISCONNECT  client_addr %s   client_fd %d\n", ip, client_info.client_fd);
-	fclose(fp);
-}
-
-void do_work(){
-	char buffer[256];
-	bzero(buffer, 256);
-
-	while(head != NULL){
-		printf("have work in queue\n");
-		curr = head;
-		work(buffer, 256, curr->difficulty, curr->seed, curr->start);
-		work_num--;
-		//n = write(client_info->client_fd,buffer,strlen(buffer));
-		//solu_log(*client_info, buffer);
-	}
+	fprintf(fp, "%s SEND TO  client_addr %s   client_fd %d  message %s\n",asctime(timeinfo),  ip, client_info.client_fd, msg);
 }

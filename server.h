@@ -13,6 +13,7 @@
 #define SERVER_H
 
 #include "work.h"
+#include "string-helper-functions.c"
 /*---------------------------------------------------------------------*/
 
 

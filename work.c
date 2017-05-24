@@ -10,7 +10,7 @@ struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client
         return NULL;
     }
     ptr->seed = seed;
-    ptr->target = target;
+    ptr->difficulty = target;
     ptr->start = start;
     ptr->client_fd = client_fd;
     ptr->id = id;
@@ -40,7 +40,7 @@ struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client
         return NULL;
     }
     ptr->seed = seed;
-    ptr->target = target;
+    ptr->difficulty = target;
     ptr->start = start;
     ptr->client_fd = client_fd;
     ptr->id = id;

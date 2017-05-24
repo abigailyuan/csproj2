@@ -15,9 +15,10 @@
 #include "uint256.h"
 
 
+
 struct work_job_t{
     BYTE *seed;
-    BYTE *target;
+    BYTE *difficulty;
     BYTE *start;
     BYTE *solutionBYTE;
     int id;
