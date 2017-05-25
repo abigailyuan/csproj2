@@ -40,6 +40,20 @@ int main(int argc, char *argv[]) {
 	}
 	fclose(fp);
 
+	/* Create thread to do work */
+	pthread_t work_thread_id;
+	if(pthread_create(&work_thread_id, NULL, do_work, (void*)head)) {
+		fprintf(stderr, "Failed to create thread.\n");
+		exit(EXIT_FAILURE);
+	}
+	/* Detach this thread */
+	if(pthread_detach(work_thread_id)) {
+		fprintf(stderr, "Failed to detach work thead.\n");
+		exit(EXIT_FAILURE);
+	}else{
+		fprintf(stderr, "work thread detached.\n");
+	}
+
 	/* Get a socket to listen on */
 	//int socket_fd = initialize_server_socket(atoi(argv[1]), &server_addr);
 	/* Create TCP socket */
@@ -291,6 +305,7 @@ while(1){
 			bzero(buffer, 256);
 			strcpy(buffer, "ERRO \r\n");
 			n = write(client_info->client_fd, buffer, strlen(buffer));
+			work_num--;
 			if (n < 0) {
 				perror("ERROR reading from socket");
 				close(client_info->client_fd);
@@ -349,21 +364,24 @@ while(1){
 			if (n < 0) {
 				perror("ERROR reading from socket");
 				close(client_info->client_fd);
+				work_num--;
 				pthread_exit(NULL);;
 			}
 		}else{
 			ctob(difficulty, 8, difficultyBYTE);
 			ctob(seed, 64, seedBYTE);
 			ctob(start, 16, startBYTE);
-			work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
-	    work_num--;
-			n = write(client_info->client_fd,buffer,strlen(buffer));
-			if (n < 0) {
-				perror("ERROR reading from socket");
-				close(client_info->client_fd);
-				pthread_exit(NULL);;
-			}
-			solu_log(*client_info, buffer);
+			//work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
+			add_to_queue(difficultyBYTE, seedBYTE, startBYTE, client_info);
+			printf("aaaaaa\n");
+	    //work_num--;
+			//n = write(client_info->client_fd,buffer,strlen(buffer));
+			//if (n < 0) {
+			//	perror("ERROR reading from socket");
+			//	close(client_info->client_fd);
+			//	pthread_exit(NULL);;
+			//}
+			//solu_log(*client_info, buffer);
 		}
 	}
 }else if(strcmp(firstFour, "ABRT")==0){
@@ -598,7 +616,6 @@ void error_log(client_info_t client_info, char *msg){
 	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
 	fclose(fp);
 }
-
 void solu_log(client_info_t client_info, char *msg){
 	FILE *fp=fopen("log.txt", "a");
 	if(fp == NULL){
@@ -613,7 +630,6 @@ void solu_log(client_info_t client_info, char *msg){
 	fprintf(stderr, "SEND TO  client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
 	fclose(fp);
 }
-
 void receive_log(client_info_t client_info, char *msg) {
 	FILE *fp = fopen("log.txt", "a");
 	time_t t = time(NULL);
@@ -625,7 +641,6 @@ void receive_log(client_info_t client_info, char *msg) {
 	fprintf(stderr, "FROM client_addr %s   client_fd %d  message %s\n", ip, client_info.client_fd, msg);
 	fclose(fp);
 }
-
 void disconnect_log(client_info_t client_info){
 	FILE *fp=fopen("log.txt", "a");
 	time_t t = time(NULL);
@@ -638,16 +653,33 @@ void disconnect_log(client_info_t client_info){
 	fclose(fp);
 }
 
-void do_work(){
+void add_to_queue(BYTE* difficulty, BYTE* seed, BYTE* start, client_info_t *info){
+	head = add_to_list(seed, difficulty, start, info->client_fd, work_num, true, head, curr, info);
+}
+void* do_work(void * head){
+	int n;
 	char buffer[256];
 	bzero(buffer, 256);
+	head = (struct work_job_t*) head;
+	while(1){
+		if(head == NULL){
+		  continue;
+		}else{
+			
+			printf("have work in queue\n");
+			curr = head;
+			client_info_t *curr_client = curr->info;
+			work(buffer, 256, curr->difficulty, curr->seed, curr->start);
+			pop_head(head);
+			work_num--;
+			n = write(curr_client->client_fd,buffer,strlen(buffer));
+			if (n < 0) {
+				perror("ERROR reading from socket");
+				close(curr_client->client_fd);
+				continue;
+			}
+			solu_log(*curr_client, buffer);
 
-	while(head != NULL){
-		printf("have work in queue\n");
-		curr = head;
-		work(buffer, 256, curr->difficulty, curr->seed, curr->start);
-		work_num--;
-		//n = write(client_info->client_fd,buffer,strlen(buffer));
-		//solu_log(*client_info, buffer);
+		}
 	}
 }

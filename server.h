@@ -21,12 +21,12 @@
 pthread_mutex_t lock;
 FILE *fp;
 /* Client information (Passed into thread) */
-typedef struct {
-	int client_fd;
-	struct sockaddr_in client_addr;
-	struct sockaddr_in server_addr;
-	int newsocket_fd;
-} client_info_t;
+// typedef struct {
+// 	int client_fd;
+// 	struct sockaddr_in client_addr;
+// 	struct sockaddr_in server_addr;
+// 	int newsocket_fd;
+// } client_info_t;
 /*---------------------------------------------------------------------*/
 
 /*---------------------------- Constants ------------------------------*/
@@ -54,7 +54,8 @@ char * work(char *buffer, int bufferlen, BYTE *difficultyBYTE, BYTE *seedBYTE, B
 void btoc(BYTE *number, int numberlen, char *string);
 void getTarget(BYTE* target, BYTE* difficultyBYTE);
 void receive_log(client_info_t client_info, char *msg);
-
+void* do_work(void * head);
+void add_to_queue(BYTE* difficulty, BYTE* seed, BYTE* start, client_info_t *info);
 
 
 /* Writes out a connection log to the file.

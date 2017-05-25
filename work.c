@@ -1,7 +1,7 @@
 #include "work.h"
 
 
-struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, struct work_job_t* head, struct work_job_t* curr){
+struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, struct work_job_t* head, struct work_job_t* curr, client_info_t* info){
     printf("\n creating list with headnode as [%d]\n",id);
     struct work_job_t *ptr = (struct work_job_t*)malloc(sizeof(struct work_job_t));
     if(NULL == ptr)
@@ -13,6 +13,7 @@ struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client
     ptr->difficulty = target;
     ptr->start = start;
     ptr->client_fd = client_fd;
+    ptr->info = info;
     ptr->id = id;
     ptr->next = NULL;
     ptr->prev = NULL;
@@ -21,11 +22,11 @@ struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client
     return ptr;
 }
 
-struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end, struct work_job_t* head, struct work_job_t* curr)
+struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end, struct work_job_t* head, struct work_job_t* curr, client_info_t* info)
 {
     if(NULL == head)
     {
-        return (create_list(seed, target, start, client_fd, id, head, curr));
+        return (create_list(seed, target, start, client_fd, id, head, curr, info));
     }
 
     if(add_to_end)
@@ -134,6 +135,18 @@ int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t* 
     del = NULL;
 
     return 0;
+}
+
+struct work_job_t* pop_head(struct work_job_t* head){
+  if(head == NULL){
+    return NULL;
+  }else{
+    struct work_job_t* tmp = head;
+    head->next->prev = NULL;
+    head = head->next;
+    free(tmp);
+    return head;
+  }
 }
 
 void print_list(struct work_job_t* head, struct work_job_t* curr)
