@@ -1,7 +1,7 @@
 #include "work.h"
 
 
-struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, struct work_job_t* head, struct work_job_t* curr, client_info_t* info){
+struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, struct work_job_t* head, struct work_job_t** curr, client_info_t* info){
     printf("\n creating list with headnode as [%d]\n",id);
     struct work_job_t *ptr = (struct work_job_t*)malloc(sizeof(struct work_job_t));
     if(NULL == ptr)
@@ -18,11 +18,11 @@ struct work_job_t* create_list(BYTE *seed, BYTE *target, BYTE *start, int client
     ptr->next = NULL;
     ptr->prev = NULL;
 
-    head = curr = ptr;
+    head = (*curr) = ptr;
     return ptr;
 }
 
-struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end, struct work_job_t* head, struct work_job_t* curr, client_info_t* info)
+struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client_fd, int id, bool add_to_end, struct work_job_t* head, struct work_job_t** curr, client_info_t* info)
 {
     if(NULL == head)
     {
@@ -44,6 +44,7 @@ struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client
     ptr->difficulty = target;
     ptr->start = start;
     ptr->client_fd = client_fd;
+    ptr->info = info;
     ptr->id = id;
     ptr->next = NULL;
     ptr->prev = NULL;
@@ -51,9 +52,10 @@ struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client
 
     if(add_to_end)
     {
-        ptr->prev = curr;
-        curr->next = ptr;
-        curr = ptr;
+
+        ptr->prev = *curr;
+        (*curr)->next = ptr;
+        (*curr) = ptr;
     }
     else
     {
@@ -61,10 +63,11 @@ struct work_job_t* add_to_list(BYTE *seed, BYTE *target, BYTE *start, int client
         head->prev = ptr;
         head = ptr;
     }
+
     return ptr;
 }
 
-struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev, struct work_job_t* head, struct work_job_t* curr)
+struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev, struct work_job_t* head, struct work_job_t** curr)
 {
     struct work_job_t *ptr = head;
     struct work_job_t *tmp = NULL;
@@ -99,7 +102,7 @@ struct work_job_t* search_in_list(int client_fd, struct work_job_t **prev, struc
     }
 }
 
-int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t* curr)
+int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t** curr)
 {
     struct work_job_t *prev = NULL;
     struct work_job_t *del = NULL;
@@ -119,9 +122,9 @@ int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t* 
           prev->next = del->next;
           del->next->prev = del->prev;
 
-      if(del == curr)
+      if(del == *curr)
       {
-          curr = prev;
+          *curr = prev;
       }
       else if(del == head)
       {
@@ -137,7 +140,7 @@ int delete_from_list(int client_fd, struct work_job_t* head, struct work_job_t* 
     return 0;
 }
 
-struct work_job_t* pop_head(struct work_job_t* head){
+struct work_job_t* pop_head(struct work_job_t* head, struct work_job_t** curr){
   if(head == NULL){
     return NULL;
   }else{
@@ -145,11 +148,14 @@ struct work_job_t* pop_head(struct work_job_t* head){
     head->next->prev = NULL;
     head = head->next;
     free(tmp);
+    if(head == NULL){
+      *curr = head;
+    }
     return head;
   }
 }
 
-void print_list(struct work_job_t* head, struct work_job_t* curr)
+void print_list(struct work_job_t* head, struct work_job_t** curr)
 {
     struct work_job_t *ptr = head;
 

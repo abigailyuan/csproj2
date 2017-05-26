@@ -1,10 +1,7 @@
-Timestamp: 2017-5-25 15:13:40
+Timestamp: 2017-5-25 23:31:16
 CONNECTION  client_addr 0.0.0.0   client_fd 4
-Timestamp: 2017-5-25 15:13:40
-FROM client_addr 0.0.0.0   client_fd 4  message WORK 1fffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212000 01
+Timestamp: 2017-5-25 23:31:16
+FROM client_addr 0.0.0.0   client_fd 4  message WORK 1dffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212399 01
 
-Timestamp: 2017-5-25 15:13:40
-CONNECTION  client_addr 127.0.0.1   client_fd 5
-Timestamp: 2017-5-25 15:13:40
-FROM client_addr 127.0.0.1   client_fd 5  message WORK 1fffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023212000 01
-
+Timestamp: 2017-5-25 23:31:51
+SEND TO  client_addr 0.0.0.0   client_fd 4  message SOLN 1dffffff 0000000019d6689c085ae165831e934ff763ae46a218a6c172b3f1b60a8ce26f 1000000023f6c072

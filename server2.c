@@ -10,8 +10,9 @@ The port number is passed as an argument
 int client_num = 0;
 int work_num = 0;
 
-extern struct work_job_t *head = NULL;
-extern struct work_job_t *curr = NULL;
+struct work_job_t *head = NULL;
+struct work_job_t *curr = NULL;
+
 
 
 int main(int argc, char *argv[]) {
@@ -371,17 +372,16 @@ while(1){
 			ctob(difficulty, 8, difficultyBYTE);
 			ctob(seed, 64, seedBYTE);
 			ctob(start, 16, startBYTE);
-			//work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
-			add_to_queue(difficultyBYTE, seedBYTE, startBYTE, client_info);
-			printf("aaaaaa\n");
-	    //work_num--;
-			//n = write(client_info->client_fd,buffer,strlen(buffer));
-			//if (n < 0) {
-			//	perror("ERROR reading from socket");
-			//	close(client_info->client_fd);
-			//	pthread_exit(NULL);;
-			//}
-			//solu_log(*client_info, buffer);
+			//add_to_queue(difficultyBYTE, seedBYTE, startBYTE, client_info);
+			work(buffer, 256, difficultyBYTE, seedBYTE, startBYTE);
+	    work_num--;
+			n = write(client_info->client_fd,buffer,strlen(buffer));
+			if (n < 0) {
+				perror("ERROR reading from socket");
+				close(client_info->client_fd);
+				pthread_exit(NULL);;
+			}
+			solu_log(*client_info, buffer);
 		}
 	}
 }else if(strcmp(firstFour, "ABRT")==0){
@@ -654,25 +654,29 @@ void disconnect_log(client_info_t client_info){
 }
 
 void add_to_queue(BYTE* difficulty, BYTE* seed, BYTE* start, client_info_t *info){
-	head = add_to_list(seed, difficulty, start, info->client_fd, work_num, true, head, curr, info);
+	head = add_to_list(seed, difficulty, start, info->client_fd, work_num, true, head, &curr, info);
+	printf("head = %p\n", head);
 }
-void* do_work(void * head){
+void* do_work(void * params){
 	int n;
 	char buffer[256];
 	bzero(buffer, 256);
-	head = (struct work_job_t*) head;
+	//head = (struct work_job_t*) head;
 	while(1){
 		if(head == NULL){
+			//printf("aaaaaa\n");
 		  continue;
 		}else{
-			
+
 			printf("have work in queue\n");
-			curr = head;
+			//curr = head;
 			client_info_t *curr_client = curr->info;
-			work(buffer, 256, curr->difficulty, curr->seed, curr->start);
-			pop_head(head);
+			work(buffer, 256, head->difficulty, head->seed, head->start);
+			printf("after work --------------------------\n");
+			head = pop_head(head, &curr);
 			work_num--;
 			n = write(curr_client->client_fd,buffer,strlen(buffer));
+			printf("bbbbb\n");
 			if (n < 0) {
 				perror("ERROR reading from socket");
 				close(curr_client->client_fd);
